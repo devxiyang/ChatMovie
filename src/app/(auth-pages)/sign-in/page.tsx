@@ -37,9 +37,9 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
               name="password"
               placeholder="Your password"
             />
-            <SubmitButton pendingText="Signing In..." formAction={signInAction}>
+            {/* <SubmitButton pendingText="Signing In..." formAction={signInAction}>
               Sign in with Email
-            </SubmitButton>
+            </SubmitButton> */}
           </div>
         </div>
         
@@ -55,6 +55,7 @@ export default async function Login(props: { searchParams: Promise<Message> }) {
             className="w-full flex items-center justify-center gap-2" 
             variant="outline" 
             formAction={signInWithGoogleAction}
+            type="submit"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="18" height="18">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
