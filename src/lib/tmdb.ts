@@ -446,7 +446,6 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       'vote_count.gte': 50,
       include_adult: false,
       with_original_language: 'zh|en|ko|ja|fr', // 使用 | 表示 OR 关系
-      page: 1,
       'with_runtime.gte': 60, // 至少60分钟的电影
     };
     
@@ -518,8 +517,16 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
         break;
     }
     
-    // 调用discover接口
-    let movies = await discoverMovies(options);
+    // 获取前50部电影（每页20部，获取前3页）
+    const moviePromises = [1, 2, 3].map(page => {
+      return discoverMovies({ ...options, page });
+    });
+    
+    // 等待所有请求完成
+    const movieResults = await Promise.all(moviePromises);
+    
+    // 合并所有页面的结果
+    let movies = movieResults.flat();
     
     // 如果结果少于3部电影，尝试放宽条件后再次搜索
     if (movies.length < 3) {
@@ -537,22 +544,34 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       delete options['with_runtime.gte'];
       delete options['with_runtime.lte'];
       
-      const fallbackMovies = await discoverMovies(options);
-      movies = [...movies, ...fallbackMovies];
+      // 再次获取3页数据
+      const fallbackPromises = [1, 2, 3].map(page => {
+        return discoverMovies({ ...options, page });
+      });
+      
+      const fallbackResults = await Promise.all(fallbackPromises);
+      movies = [...movies, ...fallbackResults.flat()];
     }
     
     // 如果还是没有找到电影，尝试获取流行电影
     if (movies.length === 0) {
       console.log(`无法找到匹配心情 "${mood}" 的电影，返回热门电影`);
-      return getPopularMovies();
+      // 获取3页热门电影
+      const popularPromises = [1, 2, 3].map(page => getPopularMovies(page));
+      const popularResults = await Promise.all(popularPromises);
+      movies = popularResults.flat();
     }
     
     // 去重并限制返回数量
     const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
-    return uniqueMovies.slice(0, 9); // 最多返回9部电影
+    return uniqueMovies.slice(0, 50); // 返回前50部电影
   } catch (error) {
     console.error(`根据心情"${mood}"发现电影失败:`, error);
     // 出错时返回热门电影作为后备
-    return getPopularMovies();
+    const popularPromises = [1, 2, 3].map(page => getPopularMovies(page));
+    const popularResults = await Promise.all(popularPromises);
+    const movies = popularResults.flat();
+    const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
+    return uniqueMovies.slice(0, 50);
   }
 } 
