@@ -26,23 +26,21 @@ export function ChatMovie() {
         setIsSearching(true);
         setError(null);
         
-        // Extract JSON from the message
-        const jsonMatch = message.content.match(/\{[\s\S]*?\}/);
-        if (!jsonMatch) {
+        // Parse the response as JSON
+        const response = JSON.parse(message.content);
+        
+        if (!response.search) {
           setError("Could not understand the search criteria. Please try again with a different description.");
           return;
         }
 
-        // Parse the search parameters
-        const searchParams = JSON.parse(jsonMatch[0]);
-        
-        // Build search options
+        // Build search options from the validated response
         const searchOptions = {
           language: 'en-US',
-          with_genres: searchParams.genres,
-          with_keywords: searchParams.keywords,
+          with_genres: response.search.genres,
+          with_keywords: response.search.keywords,
           include_adult: false,
-          ...searchParams.options
+          ...response.search.options
         };
 
         // Perform the search
@@ -80,8 +78,10 @@ export function ChatMovie() {
                     : 'bg-muted'
                 }`}
               >
-                {/* Remove any JSON from displayed messages */}
-                {message.content.replace(/\{[\s\S]*?\}/g, '')}
+                {/* Display only the text response, not the JSON */}
+                {typeof message.content === 'string' 
+                  ? message.content.replace(/\{[\s\S]*?\}/g, '').trim()
+                  : JSON.stringify(message.content)}
               </div>
             </div>
           ))}

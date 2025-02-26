@@ -1,67 +1,73 @@
 import { google } from '@ai-sdk/google';
-import { streamText, Message } from 'ai';
+import { generateObject } from 'ai';
+import { z } from 'zod';
 
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+// Define the schema for movie search parameters
+const movieSearchSchema = z.object({
+  search: z.object({
+    genres: z.string().describe('Comma-separated genre IDs (e.g., "28" for Action, "35" for Comedy)'),
+    keywords: z.string().describe('Comma-separated keywords for the movie search'),
+    options: z.object({
+      vote_average_gte: z.number().optional().describe('Minimum vote average (1-10)'),
+      sort_by: z.string().optional().describe('Sort order (e.g., popularity.desc)'),
+      with_original_language: z.string().optional().describe('Original language code (e.g., en, ja)'),
+      primary_release_year: z.number().optional().describe('Release year'),
+      with_runtime_gte: z.number().optional().describe('Minimum runtime in minutes'),
+      with_runtime_lte: z.number().optional().describe('Maximum runtime in minutes'),
+      without_genres: z.string().optional().describe('Excluded genre IDs'),
+      with_cast: z.string().optional().describe('Search by cast members')
+    }).optional()
+  })
+});
+
 // System prompt to guide AI in understanding user's movie preferences
 const systemPrompt = `You are a professional movie recommendation assistant. Your task is to help users find movies based on their preferences.
 
-When a user describes what kind of movie they want to watch, analyze their requirements and return a JSON object with search parameters.
+When a user describes what kind of movie they want to watch, analyze their requirements and provide appropriate search parameters.
 
 Genre ID reference:
-28: Action, 12: Adventure, 16: Animation, 35: Comedy, 80: Crime, 
-99: Documentary, 18: Drama, 10751: Family, 14: Fantasy, 36: History, 
-27: Horror, 10402: Music, 9648: Mystery, 10749: Romance, 
-878: Science Fiction, 53: Thriller, 10752: War, 37: Western
+28: Action
+12: Adventure
+16: Animation
+35: Comedy
+80: Crime
+99: Documentary
+18: Drama
+10751: Family
+14: Fantasy
+36: History
+27: Horror
+10402: Music
+9648: Mystery
+10749: Romance
+878: Science Fiction
+53: Thriller
+10752: War
+37: Western
 
-Return your response in this format:
-{
-  "genres": "comma-separated genre IDs",
-  "keywords": "comma-separated keywords",
-  "options": {
-    "vote_average.gte": number,
-    "sort_by": "string",
-    "with_original_language": "string",
-    "primary_release_year": number,
-    "with_runtime.gte": number,
-    "with_runtime.lte": number,
-    "without_genres": "string",
-    "with_cast": "string"
-  }
-}
-
-Example:
-User: "I want to watch a Jackie Chan action movie"
-Assistant: Let me help you find some Jackie Chan action movies.
-{
-  "genres": "28",
-  "keywords": "martial-arts,action",
-  "options": {
-    "with_cast": "Jackie Chan",
-    "sort_by": "popularity.desc",
-    "vote_average.gte": 6.0
-  }
-}`;
+First respond to the user in a friendly way, then provide the search parameters.`;
 
 export async function POST(req: Request) {
-  const { messages }: { messages: Message[] } = await req.json();
+  const { messages } = await req.json();
+  const userMessage = messages[messages.length - 1].content;
 
-  const result = streamText({
+  // First, let's get a friendly response
+  const response = await generateObject({
     model: google('gemini-2.0-flash'),
-    messages,
-    system: systemPrompt,
-    maxSteps: 15,
-    temperature: 0.7,
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userMessage }
+    ],
+    schema: movieSearchSchema,
   });
 
+  // Format the response
   const headers = new Headers({
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
+    'Content-Type': 'application/json',
   });
 
-  return result.toDataStreamResponse({
-    headers,
-  });
+  return new Response(JSON.stringify(response), { headers });
 } 
