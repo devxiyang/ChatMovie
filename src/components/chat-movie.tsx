@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { MovieDetail } from '@/components/movie-detail';
+import { discoverMovies } from '@/lib/tmdb';
 
 export function ChatMovie() {
   const [movies, setMovies] = useState<any[]>([]);
@@ -18,31 +19,34 @@ export function ChatMovie() {
     onResponse: (response) => {
       // Reset any previous errors when we get a new response
       setError(null);
+      setMovies([]);
     },
     onFinish: async (message) => {
       try {
         setIsSearching(true);
         setError(null);
         
-        // Look for a JSON object in the message content
-        const jsonMatch = message.content.match(/\{[\s\S]*\}/);
+        // Extract JSON from the message
+        const jsonMatch = message.content.match(/\{[\s\S]*?\}/);
         if (!jsonMatch) {
-          setMovies([]);
+          setError("Could not understand the search criteria. Please try again with a different description.");
           return;
         }
 
-        // Parse the JSON response
-        const response = JSON.parse(jsonMatch[0]);
+        // Parse the search parameters
+        const searchParams = JSON.parse(jsonMatch[0]);
         
-        // Check if we have a successful tool response
-        if (response.success === false) {
-          setError(response.error || "Failed to search movies. Please try again.");
-          setMovies([]);
-          return;
-        }
+        // Build search options
+        const searchOptions = {
+          language: 'en-US',
+          with_genres: searchParams.genres,
+          with_keywords: searchParams.keywords,
+          include_adult: false,
+          ...searchParams.options
+        };
 
-        // Extract movies from the response
-        const movieResults = response.movies || [];
+        // Perform the search
+        const movieResults = await discoverMovies(searchOptions);
         
         if (movieResults.length === 0) {
           setError("No movies found matching your criteria. Try a different description.");
@@ -50,9 +54,8 @@ export function ChatMovie() {
           setMovies(movieResults);
         }
       } catch (error) {
-        console.error('Failed to process movie results:', error);
+        console.error('Failed to search movies:', error);
         setError("Sorry, something went wrong. Please try again with a different description.");
-        setMovies([]);
       } finally {
         setIsSearching(false);
       }
@@ -77,7 +80,8 @@ export function ChatMovie() {
                     : 'bg-muted'
                 }`}
               >
-                {message.content}
+                {/* Remove any JSON from displayed messages */}
+                {message.content.replace(/\{[\s\S]*?\}/g, '')}
               </div>
             </div>
           ))}
