@@ -289,35 +289,64 @@ export function formatMovie(movie: Movie) {
 }
 
 // 使用discover接口根据条件搜索电影
-export async function discoverMovies(options: {
-  with_genres?: string,       // 按电影类型筛选，如"28,12"代表动作和冒险片
-  with_keywords?: string,     // 按关键词筛选，如"love,romance"
-  sort_by?: string,           // 排序方式，如"popularity.desc"
-  primary_release_year?: number, // 发行年份
-  'vote_average.gte'?: number,  // 最低评分，格式为vote_average.gte
-  'vote_average.lte'?: number,  // 最高评分
-  'vote_count.gte'?: number,    // 最少评价数量
-  with_original_language?: string, // 原始语言，如"en"代表英语
-  region?: string,             // 地区，如"US"代表美国
-  include_adult?: boolean,     // 是否包含成人内容
-  year?: number,               // 上映年份（任何形式的发行）
-  without_genres?: string,     // 排除的电影类型
-  with_watch_providers?: string, // 流媒体服务提供商
-  watch_region?: string,       // 可观看的地区
-  with_watch_monetization_types?: string, // 观看类型（租赁、购买等）
-  page?: number               // 页码
-}): Promise<any[]> {
+export interface DiscoverMovieOptions {
+  certification?: string;
+  'certification.gte'?: string;
+  'certification.lte'?: string;
+  certification_country?: string;
+  include_adult?: boolean;
+  include_video?: boolean;
+  language?: string;
+  page?: number;
+  primary_release_year?: number;
+  'primary_release_date.gte'?: string;
+  'primary_release_date.lte'?: string;
+  region?: string;
+  'release_date.gte'?: string;
+  'release_date.lte'?: string;
+  sort_by?: string;
+  'vote_average.gte'?: number;
+  'vote_average.lte'?: number;
+  'vote_count.gte'?: number;
+  'vote_count.lte'?: number;
+  watch_region?: string;
+  with_cast?: string;
+  with_companies?: string;
+  with_crew?: string;
+  with_genres?: string;
+  with_keywords?: string;
+  with_origin_country?: string;
+  with_original_language?: string;
+  with_people?: string;
+  with_release_type?: number[];
+  'with_runtime.gte'?: number;
+  'with_runtime.lte'?: number;
+  with_watch_monetization_types?: ('flatrate' | 'free' | 'ads' | 'rent' | 'buy')[];
+  with_watch_providers?: string;
+  without_companies?: string;
+  without_genres?: string;
+  without_keywords?: string;
+  without_watch_providers?: string;
+  year?: number;
+}
+
+export async function discoverMovies(options: DiscoverMovieOptions): Promise<any[]> {
   try {
     // 构建查询参数
     const queryParams = new URLSearchParams();
     
-    // 添加语言
-    // queryParams.append('language', 'zh-CN');
+    // 添加语言参数，默认使用中文
+    queryParams.append('language', options.language || 'zh-CN');
     
     // 添加其他查询参数
     Object.entries(options).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
-        queryParams.append(key, value.toString());
+        // 处理数组类型的参数
+        if (Array.isArray(value)) {
+          queryParams.append(key, value.join(','));
+        } else {
+          queryParams.append(key, value.toString());
+        }
       }
     });
     
@@ -408,15 +437,17 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     const filters = moodToFilters[mood] || {};
     
     // 根据心情配置更具体的筛选条件
-    const options: Record<string, any> = {
+    const options: DiscoverMovieOptions = {
+      language: 'zh-CN',
       with_genres: filters.genres,
       with_keywords: filters.keywords,
-      sort_by: 'vote_average.desc', // 默认优先推荐高评分的电影
-      'vote_average.gte': 6.0,    // 评分至少6分
-      'vote_count.gte': 50,      // 降低评价数量门槛，确保能返回足够多的电影
-      include_adult: false,       // 不包含成人内容
-      with_original_language: 'zh,en,ko,ja,fr', // 增加常见语言电影
-      page: 1
+      sort_by: 'vote_average.desc',
+      'vote_average.gte': 6.0,
+      'vote_count.gte': 50,
+      include_adult: false,
+      with_original_language: 'zh|en|ko|ja|fr', // 使用 | 表示 OR 关系
+      page: 1,
+      'with_runtime.gte': 60, // 至少60分钟的电影
     };
     
     // 为特定情绪添加额外的筛选条件
@@ -426,49 +457,60 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       case 'playful':
         // 快乐类情绪优先选择评分更高的喜剧片
         options['vote_average.gte'] = 6.5;
-        options.sort_by = 'popularity.desc'; // 快乐类情绪更关注流行度
+        options.sort_by = 'popularity.desc';
+        options['with_runtime.lte'] = 150; // 控制时长在2.5小时内
         break;
       case 'reflective':
       case 'thoughtful':
-        // 思考类情绪优先质量而非流行度，降低评分要求提高匹配率
+        // 思考类情绪优先质量而非流行度
         options['vote_average.gte'] = 7.0;
-        options['vote_count.gte'] = 100; // 对于思考类电影，评价数多通常意味着更有深度
+        options['vote_count.gte'] = 100;
+        options.with_original_language = 'en|fr|de|es|it'; // 更多欧美电影
         break;
       case 'romantic':
       case 'passionate':
         // 感情类情绪排除恐怖和暴力类型
         options.without_genres = '27,53';
-        options.sort_by = 'vote_average.desc'; // 浪漫类电影优先高评分
+        options.sort_by = 'vote_average.desc';
+        options['with_runtime.gte'] = 90; // 至少90分钟
         break;
       case 'fearful':
       case 'tense':
-        // 恐惧类情绪关注类型本身，降低评分要求提高匹配率
+        // 恐惧类情绪关注类型本身
         options['vote_average.gte'] = 5.5;
-        options.sort_by = 'popularity.desc'; // 恐怖片更关注流行度而非评分
+        options.sort_by = 'popularity.desc';
+        options['with_runtime.lte'] = 120; // 控制时长在2小时内
         break;
       case 'gloomy':
       case 'melancholy':
         // 忧郁和感伤类情绪需要情感深度高的电影
         options['vote_average.gte'] = 6.5;
-        options.without_genres = '35,16'; // 排除喜剧和动画
+        options.without_genres = '35,16';
+        options['with_runtime.gte'] = 100; // 偏好较长的电影
         break;
       case 'idyllic':
         // 梦幻情绪适合奇幻类电影
-        options.with_genres = '14,10751,16'; // 奇幻、家庭、动画
+        options.with_genres = '14,10751,16';
+        options['vote_average.gte'] = 6.0;
+        options.sort_by = 'popularity.desc';
         break;
       case 'weird':
         // 奇怪情绪需要怪诞、非主流的电影
-        options['vote_average.gte'] = 5.0; // 降低评分要求，怪诞电影往往评分不高但很有特色
-        options.sort_by = 'vote_count.desc'; // 优先推荐讨论度高的
+        options['vote_average.gte'] = 5.0;
+        options.sort_by = 'vote_count.desc';
+        options.with_original_language = 'en|fr|ja'; // 偏好这些地区的怪诞电影
         break;
       case 'angry':
         // 愤怒情绪需要动作和复仇类电影
         options.with_keywords = 'revenge,justice,fight,vendetta';
-        options.with_genres = '28,80,10752'; // 动作、犯罪、战争
+        options.with_genres = '28,80,10752';
+        options['with_runtime.gte'] = 90;
         break;
       case 'lonely':
         // 孤独情绪适合成长、独处、自我发现的电影
         options.with_keywords = 'solitude,isolation,loneliness,journey,self-discovery';
+        options['vote_average.gte'] = 6.5;
+        options.sort_by = 'vote_average.desc';
         break;
       default:
         // 默认情况，平衡流行度和评分
@@ -488,8 +530,12 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       // 如果指定了电影类型，可以尝试只保留主要类型
       if (options.with_genres && options.with_genres.includes(',')) {
         const genres = options.with_genres.split(',');
-        options.with_genres = genres[0]; // 只保留第一个类型
+        options.with_genres = genres[0];
       }
+      
+      // 移除一些可能限制太严格的条件
+      delete options['with_runtime.gte'];
+      delete options['with_runtime.lte'];
       
       const fallbackMovies = await discoverMovies(options);
       movies = [...movies, ...fallbackMovies];
