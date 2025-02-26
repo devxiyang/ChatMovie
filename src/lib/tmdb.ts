@@ -142,7 +142,7 @@ export async function fetchGenres(): Promise<GenreMap> {
 async function searchMoviesByKeyword(keyword: string): Promise<Movie[]> {
   try {
     const response = await fetch(
-      `${TMDB_BASE_URL}/search/movie?language=zh-CN&query=${keyword}&page=1&include_adult=false`, {
+      `${TMDB_BASE_URL}/search/movie?language=en-US&query=${keyword}&page=1&include_adult=false`, {
         headers: {
           'Authorization': `Bearer ${TMDB_API_KEY}`,
           'accept': 'application/json'
@@ -166,7 +166,7 @@ async function searchMoviesByKeyword(keyword: string): Promise<Movie[]> {
 export async function getPopularMovies(page: number = 1): Promise<any[]> {
   try {
     const response = await fetch(
-      `${TMDB_BASE_URL}/movie/popular?page=${page}`, {
+      `${TMDB_BASE_URL}/movie/popular?language=en-US&page=${page}`, {
         headers: {
           'Authorization': `Bearer ${TMDB_API_KEY}`,
           'accept': 'application/json'
@@ -234,7 +234,7 @@ export async function getMoviesByMood(mood: string): Promise<Movie[]> {
 export async function getMovieVideos(movieId: number): Promise<MovieVideo[]> {
   try {
     const response = await fetch(
-      `${TMDB_BASE_URL}/movie/${movieId}/videos`, {
+      `${TMDB_BASE_URL}/movie/${movieId}/videos?language=en-US`, {
         headers: {
           'Authorization': `Bearer ${TMDB_API_KEY}`,
           'accept': 'application/json'
@@ -438,14 +438,14 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     
     // 根据心情配置更具体的筛选条件
     const options: DiscoverMovieOptions = {
-      language: 'zh-CN',
+      language: 'en-US',
       with_genres: filters.genres,
       with_keywords: filters.keywords,
       sort_by: 'vote_average.desc',
       'vote_average.gte': 6.0,
       'vote_count.gte': 50,
       include_adult: false,
-      with_original_language: 'zh|en|ko|ja|fr', // 使用 | 表示 OR 关系
+      with_original_language: 'en', // 默认英语电影
       'with_runtime.gte': 60, // 至少60分钟的电影
     };
     

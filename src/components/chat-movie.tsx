@@ -16,23 +16,23 @@ export function ChatMovie() {
     onFinish: async (message) => {
       try {
         setIsSearching(true);
-        // 解析 AI 返回的 JSON 字符串
+        // Parse AI response JSON string
         const response = JSON.parse(message.content);
         
-        // 构建搜索选项
+        // Build search options
         const searchOptions = {
-          language: 'zh-CN',
+          language: 'en-US',
           with_genres: response.genres,
           with_keywords: response.keywords,
           include_adult: false,
           ...response.options
         };
         
-        // 获取电影列表
+        // Get movie list
         const movieResults = await discoverMovies(searchOptions);
         setMovies(movieResults);
       } catch (error) {
-        console.error('搜索电影失败:', error);
+        console.error('Failed to search movies:', error);
       } finally {
         setIsSearching(false);
       }
@@ -67,7 +67,7 @@ export function ChatMovie() {
       {(isLoading || isSearching) && (
         <div className="flex items-center justify-center gap-2 text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" />
-          {isLoading ? '正在思考...' : '正在搜索电影...'}
+          {isLoading ? 'Thinking...' : 'Searching movies...'}
         </div>
       )}
 
@@ -86,11 +86,11 @@ export function ChatMovie() {
         <Input
           value={input}
           onChange={handleInputChange}
-          placeholder="描述你想看的电影，例如：想看一部温馨治愈的日本电影..."
+          placeholder="Describe the movie you want to watch, e.g.: I want to watch a heartwarming Japanese film..."
           disabled={isLoading}
         />
         <Button type="submit" disabled={isLoading || !input.trim()}>
-          发送
+          Send
         </Button>
       </form>
     </div>
