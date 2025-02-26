@@ -6,8 +6,27 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { getMoviesByMood, discoverMoviesByMood, getMovieVideos, MovieVideo } from '@/lib/tmdb';
 import { MovieTrailer } from '@/components/movie-trailer';
+import { MovieDetail } from '@/components/movie-detail';
 
 // 定义电影类型
+interface MovieData {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path?: string;
+  posterPath?: string;
+  release_date?: string;
+  year?: number;
+  vote_average?: number;
+  rating?: number;
+  genre_ids?: number[];
+  genres?: {
+    id: number;
+    name: string;
+  }[];
+  genre?: string[];
+}
+
 interface Movie {
   id: number;
   title: string;
@@ -65,18 +84,32 @@ export default function MoviesPage() {
         }
         
         // 将API返回的数据转换为我们的Movie类型
-        const formattedMovies: Movie[] = moviesData.map(movie => ({
-          id: movie.id,
-          title: movie.title,
-          overview: movie.overview,
-          posterPath: movie.poster_path 
+        const formattedMovies: Movie[] = moviesData.map((movie: MovieData) => {
+          // 确保海报路径存在
+          const posterPath = movie.posterPath || (movie.poster_path 
             ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` 
-            : 'https://via.placeholder.com/500x750/E5E7EB/1F2937?text=无海报',
-          year: movie.release_date ? new Date(movie.release_date).getFullYear() : 0,
-          rating: movie.vote_average ?? 0, // 确保rating至少有默认值0
-          genre: movie.genres ? movie.genres.map(g => g.name) : [],
-          trailer: null // 初始化预告片为null
-        }));
+            : 'https://via.placeholder.com/500x750/E5E7EB/1F2937?text=无海报');
+
+          // 确保年份存在
+          const year = movie.year || (movie.release_date ? new Date(movie.release_date).getFullYear() : 0);
+
+          // 确保评分存在
+          const rating = movie.rating ?? movie.vote_average ?? 0;
+
+          // 确保类型存在
+          const genre = movie.genre || (movie.genres ? movie.genres.map(g => g.name) : []);
+
+          return {
+            id: movie.id,
+            title: movie.title,
+            overview: movie.overview,
+            posterPath,
+            year,
+            rating,
+            genre,
+            trailer: null // 初始化预告片为null
+          };
+        });
 
         // 获取每部电影的预告片
         const moviesWithTrailers = await Promise.all(
@@ -197,44 +230,10 @@ export default function MoviesPage() {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-3 gap-8">
             {movies.map((movie) => (
-              <div 
-                key={movie.id} 
-                className="bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300"
-              >
-                <div className="relative h-96 w-full">
-                  <Image
-                    src={movie.posterPath}
-                    alt={movie.title}
-                    fill
-                    style={{ objectFit: 'cover' }}
-                  />
-                </div>
-                <div className="p-6">
-                  <h2 className="text-xl font-bold mb-2">{movie.title}</h2>
-                  <div className="flex items-center mb-3">
-                    <span className="text-yellow-500 mr-1">★</span>
-                    <span className="mr-3">{typeof movie.rating === 'number' ? movie.rating.toFixed(1) : 'N/A'}</span>
-                    <span className="text-gray-500 mr-3">{movie.year || '未知'}</span>
-                    <div className="flex flex-wrap">
-                      {movie.genre && movie.genre.length > 0 ? movie.genre.map((g, i) => (
-                        <span key={i} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mr-1 mb-1">
-                          {g}
-                        </span>
-                      )) : (
-                        <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mr-1 mb-1">
-                          未分类
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-gray-700 dark:text-gray-300 line-clamp-4 mb-4">{movie.overview || "暂无简介"}</p>
-                  
-                  {/* 添加预告片按钮 */}
-                  <div className="mt-2">
-                    <MovieTrailer video={movie.trailer} movieTitle={movie.title} />
-                  </div>
-                </div>
-              </div>
+              <MovieDetail
+                key={movie.id}
+                {...movie}
+              />
             ))}
           </div>
         )}

@@ -312,7 +312,7 @@ export async function discoverMovies(options: {
     const queryParams = new URLSearchParams();
     
     // 添加语言
-    queryParams.append('language', 'zh-CN');
+    // queryParams.append('language', 'zh-CN');
     
     // 添加其他查询参数
     Object.entries(options).forEach(([key, value]) => {
