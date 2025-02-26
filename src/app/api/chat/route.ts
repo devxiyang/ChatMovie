@@ -1,27 +1,11 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { experimental_StreamingReactResponse as StreamingReactResponse } from 'ai';
-import { z } from 'zod';
+import { google } from '@ai-sdk/google';
+import { streamText, Message } from 'ai';
 
-// Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || '');
-
-// Define the schema for movie search parameters
-const movieSearchSchema = z.object({
-  genres: z.string().describe('Comma-separated genre IDs, e.g.: 28,12,16'),
-  keywords: z.string().describe('Comma-separated keywords, e.g.: action,adventure'),
-  options: z.object({
-    'vote_average.gte': z.number().optional(),
-    'sort_by': z.string().optional(),
-    'with_original_language': z.string().optional(),
-    'primary_release_year': z.number().optional(),
-    'with_runtime.gte': z.number().optional(),
-    'with_runtime.lte': z.number().optional(),
-    'without_genres': z.string().optional(),
-  }),
-});
+// Allow streaming responses up to 30 seconds
+export const maxDuration = 30;
 
 // System prompt to guide AI in understanding user's movie preferences
-const SYSTEM_PROMPT = `You are a professional movie recommendation assistant. You need to understand user's requirements and convert them into key movie search elements.
+const systemPrompt = `You are a professional movie recommendation assistant. You need to understand user's requirements and convert them into key movie search elements.
 
 Genre ID reference:
 28: Action, 12: Adventure, 16: Animation, 35: Comedy, 80: Crime, 
@@ -29,44 +13,45 @@ Genre ID reference:
 27: Horror, 10402: Music, 9648: Mystery, 10749: Romance, 
 878: Science Fiction, 53: Thriller, 10752: War, 37: Western
 
-Please analyze the user's request and provide appropriate search parameters.`;
+Please analyze the user's request and provide appropriate search parameters in JSON format:
+{
+  "genres": "comma-separated genre IDs",
+  "keywords": "comma-separated keywords",
+  "options": {
+    "vote_average.gte": number,
+    "sort_by": "string",
+    "with_original_language": "string",
+    "primary_release_year": number,
+    "with_runtime.gte": number,
+    "with_runtime.lte": number,
+    "without_genres": "string"
+  }
+}`;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const userMessage = messages[messages.length - 1].content;
+  const { messages }: { messages: Message[] } = await req.json();
 
-  // Call Gemini API
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
-  
-  const response = await model.generateContent([
-    { text: SYSTEM_PROMPT },
-    { text: userMessage }
-  ]);
+  console.log(messages);
 
-  const result = response.response.text();
-  
-  try {
-    // Parse the response and validate against our schema
-    const parsedResponse = JSON.parse(result);
-    const validatedResponse = movieSearchSchema.parse(parsedResponse);
+  const result = streamText({
+    model: google('gemini-2.0-flash'),
+    messages,
+    system: systemPrompt,
+    maxSteps: 15,
+    temperature: 0.7,
     
-    // Return the response as a streaming response
-    return new StreamingReactResponse(
-      new ReadableStream({
-        async start(controller) {
-          controller.enqueue(JSON.stringify(validatedResponse));
-          controller.close();
-        }
-      }),
-      {
-        data: validatedResponse,
-      }
-    );
-  } catch (error) {
-    console.error('Failed to parse or validate response:', error);
-    return new Response(JSON.stringify({ error: 'Failed to process request' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
-  }
+    onError: (error) => {
+      console.error('Streaming error:', error);
+    },
+  });
+
+  const headers = new Headers({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  return result.toDataStreamResponse({
+    headers,
+  });
 } 
