@@ -19,17 +19,48 @@ interface Movie {
 interface MovieSearchResultsProps {
   movies: Movie[];
   onClose?: () => void;
+  language?: 'en' | 'zh'; // Add language prop for UI text
 }
 
-export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps) {
+export function MovieSearchResults({ movies, onClose, language = 'en' }: MovieSearchResultsProps) {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [visibleMovies, setVisibleMovies] = useState(8);
   const [favoriteMovies, setFavoriteMovies] = useState<Record<number, boolean>>({});
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
 
   if (!movies || movies.length === 0) {
     return null;
   }
+
+  // Localized text dictionary
+  const text = {
+    en: {
+      found: "Found",
+      movies: "movies",
+      clickForDetails: "Click card for details",
+      showMore: "Show more movies",
+      favorite: "Favorite",
+      favorited: "Favorited",
+      noOverview: "No overview available",
+      viewDetails: "View Details",
+      watchTrailer: "Watch Trailer"
+    },
+    zh: {
+      found: "找到",
+      movies: "部电影",
+      clickForDetails: "点击卡片查看详情",
+      showMore: "显示更多电影",
+      favorite: "收藏",
+      favorited: "已收藏",
+      noOverview: "暂无简介",
+      viewDetails: "查看详情",
+      watchTrailer: "观看预告片"
+    }
+  };
+
+  // Use the appropriate text based on language
+  const t = text[language];
 
   // 从电影对象中提取年份
   const getYear = (movie: Movie) => {
@@ -76,14 +107,23 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
     setVisibleMovies(prev => Math.min(prev + 8, movies.length));
   };
 
+  // Handle image errors
+  const handleImageError = (id: number) => {
+    setImgErrors(prev => ({
+      ...prev,
+      [id]: true
+    }));
+    console.error(`Image failed to load for movie ID: ${id}`);
+  };
+
   return (
-    <div className="mt-4 mb-6 w-full">
+    <div className="mt-4 mb-6 w-full bg-background/50 p-4 rounded-lg border shadow-sm">
       <div className="flex justify-between items-center mb-3">
         <h3 className="text-lg font-semibold flex items-center gap-2">
-          <span>找到 {movies.length} 部电影</span>
+          <span>{t.found} {movies.length} {t.movies}</span>
           {movies.length > 0 && (
             <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
-              点击卡片查看详情
+              {t.clickForDetails}
             </span>
           )}
         </h3>
@@ -105,20 +145,20 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
             }}
           >
             <div className="relative aspect-[2/3] w-full overflow-hidden">
-              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+              <div className={cn(
+                "absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center",
+                !imgErrors[movie.id] && movie.poster_path && "opacity-0"
+              )}>
                 <ImageOff className="h-12 w-12 text-gray-400" />
               </div>
               
-              {movie.poster_path && (
+              {movie.poster_path && !imgErrors[movie.id] && (
                 <img
                   src={getPosterUrl(movie.poster_path)}
                   alt={movie.title}
                   className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
                   loading="lazy"
-                  onError={(e) => {
-                    console.error(`Image failed to load: ${getPosterUrl(movie.poster_path)}`);
-                    e.currentTarget.style.display = 'none';
-                  }}
+                  onError={() => handleImageError(movie.id)}
                 />
               )}
               
@@ -165,7 +205,7 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
             className="gap-1"
           >
             <Plus className="h-4 w-4" />
-            显示更多电影 ({movies.length - visibleMovies})
+            {t.showMore} ({movies.length - visibleMovies})
           </Button>
         </div>
       )}
@@ -180,17 +220,14 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
             
             <div className="grid md:grid-cols-2 gap-4 p-4">
               <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
-                {!selectedMovie.poster_path && <ImageOff className="h-16 w-16 text-gray-400" />}
+                {(!selectedMovie.poster_path || imgErrors[selectedMovie.id]) && <ImageOff className="h-16 w-16 text-gray-400" />}
                 
-                {selectedMovie.poster_path && (
+                {selectedMovie.poster_path && !imgErrors[selectedMovie.id] && (
                   <img
                     src={getPosterUrl(selectedMovie.poster_path)}
                     alt={selectedMovie.title}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      console.error(`Detail image failed to load: ${getPosterUrl(selectedMovie.poster_path)}`);
-                      e.currentTarget.style.display = 'none';
-                    }}
+                    onError={() => handleImageError(selectedMovie.id)}
                   />
                 )}
               </div>
@@ -220,7 +257,7 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
                     onClick={(e) => toggleFavorite(selectedMovie.id, e)}
                   >
                     <Heart className={cn("h-4 w-4 mr-1", favoriteMovies[selectedMovie.id] && "fill-current")} />
-                    {favoriteMovies[selectedMovie.id] ? '已收藏' : '收藏'}
+                    {favoriteMovies[selectedMovie.id] ? t.favorited : t.favorite}
                   </Button>
                 </div>
                 
@@ -233,7 +270,7 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
                 </div>
                 
                 <p className="text-sm text-muted-foreground mb-4 max-h-[150px] overflow-y-auto">
-                  {selectedMovie.overview || "暂无简介"}
+                  {selectedMovie.overview || t.noOverview}
                 </p>
                 
                 <div className="mt-auto space-y-2">
@@ -242,7 +279,7 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
                     onClick={() => window.open(`https://www.themoviedb.org/movie/${selectedMovie.id}`, '_blank')}
                   >
                     <Info className="mr-2 h-4 w-4" />
-                    查看详情
+                    {t.viewDetails}
                   </Button>
                   
                   <Button 
@@ -250,7 +287,7 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
                     onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedMovie.title + ' trailer')}`, '_blank')}
                   >
                     <Play className="h-4 w-4" />
-                    观看预告片
+                    {t.watchTrailer}
                   </Button>
                 </div>
               </div>

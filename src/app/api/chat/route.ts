@@ -7,8 +7,44 @@ import { discoverMovies, DiscoverMovieOptions } from '@/lib/tmdb';
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+// Mood to genre and keyword mapping for better recommendations
+interface MoodRecommendation {
+  genres: string;
+  keywords: string;
+}
+
+const moodToRecommendation: Record<string, MoodRecommendation> = {
+  // Happy/Positive moods
+  happy: { genres: '35,10751', keywords: 'fun,happy,comedy,feel-good' },
+  cheerful: { genres: '35,10751', keywords: 'fun,happy,comedy' },
+  excited: { genres: '28,12', keywords: 'exciting,adventure,thrill' },
+  relaxed: { genres: '35,10751,10402', keywords: 'relaxing,calm' },
+  
+  // Thoughtful moods
+  reflective: { genres: '18', keywords: 'philosophical,thought-provoking' },
+  melancholic: { genres: '18', keywords: 'nostalgic,sentimental' },
+  thoughtful: { genres: '99,18,36', keywords: 'documentary,educational,intellectual' },
+  
+  // Emotional moods
+  sad: { genres: '18,9648', keywords: 'melancholy,sad,depression' },
+  romantic: { genres: '10749', keywords: 'love,romance,relationship' },
+  hopeful: { genres: '18,10751', keywords: 'inspirational,uplifting,hope' },
+  
+  // Exciting moods
+  adventurous: { genres: '12,28', keywords: 'adventure,journey,exploration' },
+  thrilling: { genres: '28,12,53', keywords: 'action,adventure,exciting' },
+  tense: { genres: '53,80,9648', keywords: 'suspense,thriller,tension' },
+  
+  // Specific moods
+  humorous: { genres: '35', keywords: 'comedy,parody,funny' },
+  mysterious: { genres: '9648,80', keywords: 'mystery,suspense,twist' },
+  scared: { genres: '27,53', keywords: 'horror,scary,fear' },
+  dreamy: { genres: '14,10751', keywords: 'fantasy,magical,beautiful' },
+  strange: { genres: '14,878', keywords: 'surreal,bizarre,quirky' }
+};
+
 // System prompt to guide AI in understanding user's movie preferences
-const systemPrompt = `You are a professional movie recommendation assistant. Your primary goal is to help users discover movies by immediately using the searchMovies tool with appropriate parameters.
+const systemPrompt = `You are a professional movie recommendation assistant who specializes in finding the perfect movies based on user preferences, moods, and interests. Your primary goal is to immediately help users discover movies they'll love.
 
 LANGUAGE INSTRUCTIONS:
 1. Detect the language the user is using (English or Chinese) in their message.
@@ -17,17 +53,19 @@ LANGUAGE INSTRUCTIONS:
 4. If the user writes in English, respond in English.
 5. ALWAYS use English for search parameters regardless of conversation language.
 
-IMPORTANT INSTRUCTIONS:
-1. When a user expresses ANY interest in finding or watching movies, IMMEDIATELY call the searchMovies tool.
-2. DO NOT ask clarifying questions before using the tool - make your best guess based on available information.
-3. Make reasonable assumptions based on the user's request - if they mention a genre or actor, include it in your search.
-4. Be decisive and make assumptions when necessary rather than asking for more details.
-5. Keep your text responses short and to the point.
+RECOMMENDATION GUIDELINES:
+1. When a user expresses ANY interest in movies or mentions ANY mood or feeling, IMMEDIATELY call the searchMovies tool.
+2. Look for emotional cues or mood indicators in the user's message and map them to appropriate genres and keywords.
+3. For mood-based requests, interpret the user's emotional state and select relevant genres/keywords.
+4. If you recognize a mood like "happy," "sad," "excited," "reflective," etc., use it to guide your genre selections.
+5. Be sensitive to subtle emotional cues that might indicate what kind of movie experience the user wants.
 
-After getting results:
-- Acknowledge their request with a very brief friendly message (1-2 sentences maximum)
-- Focus on highlighting 2-3 interesting movies from the results
-- Do not describe every movie in detail
+CONVERSATION APPROACH:
+1. Don't ask clarifying questions before searching - make your best guess based on context.
+2. Be decisive and make reasonable assumptions rather than asking for more details.
+3. Keep responses brief, friendly, and focused on the recommended movies.
+4. Highlight 2-3 particularly good matches from the results with a brief explanation why.
+5. Always sound enthusiastic about your recommendations!
 
 Genre ID reference (use numeric IDs when including genres):
 28: Action
@@ -53,17 +91,14 @@ Examples:
 User: "I want to watch a sci-fi movie"
 Assistant: [Call searchMovies with genres: "878"]
 
-User: "I'm in the mood for something funny"
-Assistant: [Call searchMovies with genres: "35"]
+User: "I'm feeling sad today, need a movie"
+Assistant: [Call searchMovies with genres: "18" and keywords: "melancholy,sad"]
 
-User: "Show me movies with Tom Cruise"
-Assistant: [Call searchMovies with keywords: "Tom Cruise"]
+User: "我今天很开心，想看电影" (I'm happy today, want to watch a movie)
+Assistant: [Call searchMovies with genres: "35,10751" and keywords: "fun,happy,comedy"] (Then respond in Chinese)
 
-User: "我想看科幻电影" (I want to watch sci-fi movies)
-Assistant: [Call searchMovies with genres: "878"] (Then respond in Chinese)
-
-User: "给我推荐一些喜剧电影" (Recommend me some comedy movies)
-Assistant: [Call searchMovies with genres: "35"] (Then respond in Chinese)`;
+User: "推荐一部让人放松的电影" (Recommend a relaxing movie)
+Assistant: [Call searchMovies with genres: "35,10751" and keywords: "relaxing,calm"] (Then respond in Chinese)`;
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
@@ -75,10 +110,11 @@ export async function POST(req: Request) {
     system: systemPrompt,
     tools: {
       searchMovies: tool({
-        description: 'Search for movies based on genres, keywords, and other options',
+        description: 'Search for movies based on genres, keywords, moods, and other options',
         parameters: z.object({
           genres: z.string().optional().describe('Comma-separated genre IDs (e.g., "28" for Action, "35" for Comedy)'),
           keywords: z.string().optional().describe('Comma-separated keywords for the movie search'),
+          mood: z.string().optional().describe('A specific mood or feeling (e.g., "happy", "sad", "reflective")'),
           options: z.object({
             vote_average_gte: z.number().optional().describe('Minimum vote average (1-10)'),
             sort_by: z.string().optional().describe('Sort order (e.g., popularity.desc)'),
@@ -90,8 +126,8 @@ export async function POST(req: Request) {
             with_cast: z.string().optional().describe('Search by cast members')
           }).optional()
         }),
-        execute: async ({ genres, keywords, options }) => {
-          console.log('searchMovies tool called with:', { genres, keywords, options });
+        execute: async ({ genres, keywords, mood, options }) => {
+          console.log('searchMovies tool called with:', { genres, keywords, mood, options });
 
           // Build search options as a properly typed object
           const searchOptions: DiscoverMovieOptions = {
@@ -103,18 +139,30 @@ export async function POST(req: Request) {
             ...(options || {})
           };
           
-          // Add genres if provided
+          // Apply mood-based filters if provided
+          if (mood && moodToRecommendation[mood.toLowerCase()]) {
+            const moodFilters = moodToRecommendation[mood.toLowerCase()];
+            if (!genres && moodFilters.genres) {
+              searchOptions.with_genres = moodFilters.genres;
+            }
+            if (!keywords && moodFilters.keywords) {
+              searchOptions.with_keywords = moodFilters.keywords;
+            }
+          }
+          
+          // Add genres if provided (explicit genres take precedence over mood-based ones)
           if (genres && genres.trim()) {
             searchOptions.with_genres = genres;
           }
           
-          // Add keywords if provided
+          // Add keywords if provided (explicit keywords take precedence over mood-based ones)
           if (keywords && keywords.trim()) {
             searchOptions.with_keywords = keywords;
           }
           
           // If neither genres nor keywords provided, use default popular search
-          if ((!genres || !genres.trim()) && (!keywords || !keywords.trim())) {
+          if ((!searchOptions.with_genres || !searchOptions.with_genres.trim()) && 
+              (!searchOptions.with_keywords || !searchOptions.with_keywords.trim())) {
             console.log('No genres or keywords provided, using default popular search');
           }
 
