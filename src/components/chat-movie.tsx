@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { discoverMovies } from '@/lib/tmdb';
 import { MovieDetail } from '@/components/movie-detail';
 
 export function ChatMovie() {
@@ -16,25 +15,34 @@ export function ChatMovie() {
   
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
+    onResponse: (response) => {
+      // Reset any previous errors when we get a new response
+      setError(null);
+    },
     onFinish: async (message) => {
       try {
         setIsSearching(true);
         setError(null);
         
-        // Parse AI response JSON string
-        const response = JSON.parse(message.content);
+        // Look for a JSON object in the message content
+        const jsonMatch = message.content.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          setMovies([]);
+          return;
+        }
+
+        // Parse the JSON response
+        const response = JSON.parse(jsonMatch[0]);
         
-        // Build search options
-        const searchOptions = {
-          language: 'en-US',
-          with_genres: response.genres,
-          with_keywords: response.keywords,
-          include_adult: false,
-          ...response.options
-        };
-        
-        // Get movie list
-        const movieResults = await discoverMovies(searchOptions);
+        // Check if we have a successful tool response
+        if (response.success === false) {
+          setError(response.error || "Failed to search movies. Please try again.");
+          setMovies([]);
+          return;
+        }
+
+        // Extract movies from the response
+        const movieResults = response.movies || [];
         
         if (movieResults.length === 0) {
           setError("No movies found matching your criteria. Try a different description.");
@@ -42,8 +50,9 @@ export function ChatMovie() {
           setMovies(movieResults);
         }
       } catch (error) {
-        console.error('Failed to search movies:', error);
+        console.error('Failed to process movie results:', error);
         setError("Sorry, something went wrong. Please try again with a different description.");
+        setMovies([]);
       } finally {
         setIsSearching(false);
       }
