@@ -63,6 +63,18 @@ export interface Movie {
   }[];
 }
 
+// 电影预告片接口
+export interface MovieVideo {
+  id: string;
+  key: string;      // YouTube视频ID
+  name: string;     // 视频标题
+  site: string;     // 视频网站 (例如 "YouTube")
+  size: number;     // 视频质量 (如 360, 480, 720, 1080)
+  type: string;     // 视频类型 (如 "Trailer", "Teaser", "Clip")
+  official: boolean; // 是否为官方视频
+  published_at: string; // 发布日期
+}
+
 // 类型映射接口
 export interface GenreMap {
   [key: number]: string;
@@ -218,6 +230,42 @@ export async function getMoviesByMood(mood: string): Promise<Movie[]> {
   }
 }
 
+// 获取电影预告片
+export async function getMovieVideos(movieId: number): Promise<MovieVideo[]> {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/movie/${movieId}/videos`, {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // 筛选视频类型为预告片且来自YouTube的视频
+    const trailers = data.results
+      .filter((video: MovieVideo) => 
+        (video.type === 'Trailer' || video.type === 'Teaser') && 
+        video.site === 'YouTube'
+      )
+      // 按发布日期排序，最新的排在前面
+      .sort((a: MovieVideo, b: MovieVideo) => 
+        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+      );
+    
+    return trailers;
+  } catch (error) {
+    console.error(`获取电影ID ${movieId} 的预告片失败:`, error);
+    return [];
+  }
+}
+
 // 格式化电影数据以适合我们的应用
 export function formatMovie(movie: Movie) {
   // 获取类型的中文名称
@@ -363,10 +411,11 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     const options: Record<string, any> = {
       with_genres: filters.genres,
       with_keywords: filters.keywords,
-      sort_by: 'popularity.desc', // 按流行度排序
+      sort_by: 'vote_average.desc', // 默认优先推荐高评分的电影
       'vote_average.gte': 6.0,    // 评分至少6分
-      'vote_count.gte': 100,      // 至少有100个评价（确保电影质量）
+      'vote_count.gte': 50,      // 降低评价数量门槛，确保能返回足够多的电影
       include_adult: false,       // 不包含成人内容
+      with_original_language: 'zh,en,ko,ja,fr', // 增加常见语言电影
       page: 1
     };
     
@@ -375,30 +424,89 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       case 'cheerful':
       case 'humorous':
       case 'playful':
-        // 快乐类情绪优先选择评分更高的
+        // 快乐类情绪优先选择评分更高的喜剧片
         options['vote_average.gte'] = 6.5;
+        options.sort_by = 'popularity.desc'; // 快乐类情绪更关注流行度
         break;
       case 'reflective':
       case 'thoughtful':
-        // 思考类情绪可以接受较低的流行度，优先质量
-        options.sort_by = 'vote_average.desc';
+        // 思考类情绪优先质量而非流行度，降低评分要求提高匹配率
+        options['vote_average.gte'] = 7.0;
+        options['vote_count.gte'] = 100; // 对于思考类电影，评价数多通常意味着更有深度
         break;
       case 'romantic':
       case 'passionate':
         // 感情类情绪排除恐怖和暴力类型
         options.without_genres = '27,53';
+        options.sort_by = 'vote_average.desc'; // 浪漫类电影优先高评分
         break;
       case 'fearful':
       case 'tense':
-        // 恐惧类情绪不需要太高评分，更关注类型本身
-        options['vote_average.gte'] = 5.0;
+        // 恐惧类情绪关注类型本身，降低评分要求提高匹配率
+        options['vote_average.gte'] = 5.5;
+        options.sort_by = 'popularity.desc'; // 恐怖片更关注流行度而非评分
+        break;
+      case 'gloomy':
+      case 'melancholy':
+        // 忧郁和感伤类情绪需要情感深度高的电影
+        options['vote_average.gte'] = 6.5;
+        options.without_genres = '35,16'; // 排除喜剧和动画
+        break;
+      case 'idyllic':
+        // 梦幻情绪适合奇幻类电影
+        options.with_genres = '14,10751,16'; // 奇幻、家庭、动画
+        break;
+      case 'weird':
+        // 奇怪情绪需要怪诞、非主流的电影
+        options['vote_average.gte'] = 5.0; // 降低评分要求，怪诞电影往往评分不高但很有特色
+        options.sort_by = 'vote_count.desc'; // 优先推荐讨论度高的
+        break;
+      case 'angry':
+        // 愤怒情绪需要动作和复仇类电影
+        options.with_keywords = 'revenge,justice,fight,vendetta';
+        options.with_genres = '28,80,10752'; // 动作、犯罪、战争
+        break;
+      case 'lonely':
+        // 孤独情绪适合成长、独处、自我发现的电影
+        options.with_keywords = 'solitude,isolation,loneliness,journey,self-discovery';
+        break;
+      default:
+        // 默认情况，平衡流行度和评分
+        options.sort_by = 'popularity.desc';
         break;
     }
     
     // 调用discover接口
-    return discoverMovies(options);
+    let movies = await discoverMovies(options);
+    
+    // 如果结果少于3部电影，尝试放宽条件后再次搜索
+    if (movies.length < 3) {
+      // 降低评分要求
+      options['vote_average.gte'] = Math.max(5.0, (options['vote_average.gte'] || 6.0) - 1.0);
+      options['vote_count.gte'] = Math.max(20, (options['vote_count.gte'] || 50) / 2);
+      
+      // 如果指定了电影类型，可以尝试只保留主要类型
+      if (options.with_genres && options.with_genres.includes(',')) {
+        const genres = options.with_genres.split(',');
+        options.with_genres = genres[0]; // 只保留第一个类型
+      }
+      
+      const fallbackMovies = await discoverMovies(options);
+      movies = [...movies, ...fallbackMovies];
+    }
+    
+    // 如果还是没有找到电影，尝试获取流行电影
+    if (movies.length === 0) {
+      console.log(`无法找到匹配心情 "${mood}" 的电影，返回热门电影`);
+      return getPopularMovies();
+    }
+    
+    // 去重并限制返回数量
+    const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
+    return uniqueMovies.slice(0, 9); // 最多返回9部电影
   } catch (error) {
     console.error(`根据心情"${mood}"发现电影失败:`, error);
-    return [];
+    // 出错时返回热门电影作为后备
+    return getPopularMovies();
   }
 } 

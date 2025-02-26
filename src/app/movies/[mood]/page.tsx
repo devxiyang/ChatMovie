@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getMoviesByMood, discoverMoviesByMood } from '@/lib/tmdb';
+import { getMoviesByMood, discoverMoviesByMood, getMovieVideos, MovieVideo } from '@/lib/tmdb';
+import { MovieTrailer } from '@/components/movie-trailer';
 
 // 定义电影类型
 interface Movie {
@@ -15,6 +16,7 @@ interface Movie {
   year: number;
   rating: number;
   genre: string[];
+  trailer?: MovieVideo | null;
 }
 
 // 所有的情绪名称映射
@@ -71,10 +73,28 @@ export default function MoviesPage() {
             ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` 
             : 'https://via.placeholder.com/500x750/E5E7EB/1F2937?text=无海报',
           year: movie.release_date ? new Date(movie.release_date).getFullYear() : 0,
-          rating: movie.vote_average,
-          genre: movie.genres ? movie.genres.map(g => g.name) : []
+          rating: movie.vote_average ?? 0, // 确保rating至少有默认值0
+          genre: movie.genres ? movie.genres.map(g => g.name) : [],
+          trailer: null // 初始化预告片为null
         }));
-        setMovies(formattedMovies);
+
+        // 获取每部电影的预告片
+        const moviesWithTrailers = await Promise.all(
+          formattedMovies.map(async (movie) => {
+            try {
+              const videos = await getMovieVideos(movie.id);
+              return {
+                ...movie,
+                trailer: videos.length > 0 ? videos[0] : null
+              };
+            } catch (err) {
+              console.error(`获取电影 ${movie.id} 预告片失败:`, err);
+              return movie;
+            }
+          })
+        );
+
+        setMovies(moviesWithTrailers);
         setError(null);
       } catch (err) {
         console.error("获取电影失败:", err);
@@ -193,17 +213,26 @@ export default function MoviesPage() {
                   <h2 className="text-xl font-bold mb-2">{movie.title}</h2>
                   <div className="flex items-center mb-3">
                     <span className="text-yellow-500 mr-1">★</span>
-                    <span className="mr-3">{movie.rating.toFixed(1)}</span>
-                    <span className="text-gray-500 mr-3">{movie.year}</span>
+                    <span className="mr-3">{typeof movie.rating === 'number' ? movie.rating.toFixed(1) : 'N/A'}</span>
+                    <span className="text-gray-500 mr-3">{movie.year || '未知'}</span>
                     <div className="flex flex-wrap">
-                      {movie.genre.map((g, i) => (
+                      {movie.genre && movie.genre.length > 0 ? movie.genre.map((g, i) => (
                         <span key={i} className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mr-1 mb-1">
                           {g}
                         </span>
-                      ))}
+                      )) : (
+                        <span className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded mr-1 mb-1">
+                          未分类
+                        </span>
+                      )}
                     </div>
                   </div>
-                  <p className="text-gray-700 dark:text-gray-300 line-clamp-4">{movie.overview || "暂无简介"}</p>
+                  <p className="text-gray-700 dark:text-gray-300 line-clamp-4 mb-4">{movie.overview || "暂无简介"}</p>
+                  
+                  {/* 添加预告片按钮 */}
+                  <div className="mt-2">
+                    <MovieTrailer video={movie.trailer} movieTitle={movie.title} />
+                  </div>
                 </div>
               </div>
             ))}
