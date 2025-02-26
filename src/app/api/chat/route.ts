@@ -220,7 +220,7 @@ export async function POST(req: Request) {
         }
       })
     },
-    maxSteps: 2 // Allow up to 2 steps: 1. Initial response, 2. After tool call
+    maxSteps: 5 // Allow up to 2 steps: 1. Initial response, 2. After tool call
   });
 
   return result.toDataStreamResponse();

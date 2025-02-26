@@ -5,8 +5,8 @@ import { useChat } from '@ai-sdk/react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, Send, Trash2, Film, ThumbsUp, X } from "lucide-react";
-import { MovieSearchResults } from '@/components/movie-search-results';
+import { Loader2, Send, Trash2, Film, ThumbsUp, X, ImageOff, Star, Calendar, Heart, Info, Play, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from "@/lib/utils";
 
 // Example movie suggestions in English and Chinese
@@ -37,13 +37,25 @@ const MOVIE_SUGGESTIONS = {
   ]
 };
 
+// Movie interface
+interface Movie {
+  id: number;
+  title: string;
+  overview: string;
+  poster_path: string | null;
+  release_date?: string;
+  vote_average: number;
+  genres?: string[] | { id: number; name: string }[];
+}
+
 export function ChatMovie() {
-  const [movies, setMovies] = useState<any[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [showMovies, setShowMovies] = useState(true);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [imgErrors, setImgErrors] = useState<Record<number, boolean>>({});
+  const [favoriteMovies, setFavoriteMovies] = useState<Record<number, boolean>>({});
   const [language, setLanguage] = useState<'en' | 'zh'>('en');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [error, setError] = useState<string | null>(null);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageContainerRef = useRef<HTMLDivElement>(null);
@@ -66,62 +78,11 @@ export function ChatMovie() {
       console.log('Chat response received');
       setError(null);
     },
-    onToolCall: async (event: any) => {
-      console.log('Tool call received:', event);
-      
-      // Check if this is the searchMovies function call
-      const toolCall = event.toolCall;
-      if (!toolCall) {
-        console.log('No toolCall in event', event);
-        return;
-      }
-      
-      if (toolCall.type === 'function' && 
-          toolCall.function?.name === 'searchMovies') {
-        setIsSearching(true);
-        try {
-          // Parse arguments if needed
-          const rawArgs = toolCall.function.arguments;
-          const args = typeof rawArgs === 'string' 
-            ? JSON.parse(rawArgs) 
-            : rawArgs;
-            
-          console.log('Search movies args:', args);
-          
-          // Process search results
-          if (args.movies && Array.isArray(args.movies) && args.movies.length > 0) {
-            console.log(`Found ${args.movies.length} movies`);
-            if (args.movies[0]) {
-              console.log('First movie:', args.movies[0].title);
-              console.log('First movie poster path:', args.movies[0].poster_path);
-            }
-            setMovies(args.movies);
-            setShowMovies(true);
-          } else {
-            console.warn('No movies found in search results');
-            setError(language === 'en' 
-              ? "No movies found matching your criteria. Try a different description."
-              : "找不到符合您条件的电影。请尝试不同的描述。");
-          }
-        } catch (e) {
-          console.error('Error processing search results:', e);
-          setError(language === 'en'
-            ? "Failed to process movie search results."
-            : "处理电影搜索结果时出错。");
-        } finally {
-          setIsSearching(false);
-        }
-      }
-    },
-    onFinish: async () => {
-      setIsSearching(false);
-    },
     onError: (error) => {
       console.error('Chat error:', error);
       setError(language === 'en'
         ? "An error occurred while communicating with the AI. Please try again."
         : "与AI通信时发生错误。请重试。");
-      setIsSearching(false);
     }
   });
 
@@ -147,12 +108,11 @@ export function ChatMovie() {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, movies]);
+  }, [messages]);
 
   // Clear conversation
   const handleClearChat = () => {
     setMessages([]);
-    setMovies([]);
     setError(null);
   };
 
@@ -173,6 +133,134 @@ export function ChatMovie() {
     setTimeout(() => handleSubmit(formEvent), 100);
   };
 
+  // Handle image errors
+  const handleImageError = (id: number) => {
+    setImgErrors(prev => ({
+      ...prev,
+      [id]: true
+    }));
+    console.error(`Image failed to load for movie ID: ${id}`);
+  };
+
+  // Toggle favorite status
+  const toggleFavorite = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoriteMovies(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  // Get year from movie
+  const getYear = (movie: Movie) => {
+    if (movie.release_date) {
+      return new Date(movie.release_date).getFullYear();
+    }
+    return null;
+  };
+
+  // Get genres from movie
+  const getGenres = (movie: Movie): string[] => {
+    if (!movie.genres) return [];
+    
+    if (Array.isArray(movie.genres)) {
+      if (typeof movie.genres[0] === 'string') {
+        return movie.genres as string[];
+      }
+      return (movie.genres as { id: number; name: string }[]).map(g => g.name);
+    }
+    
+    return [];
+  };
+
+  // Build poster URL
+  const getPosterUrl = (path: string | null) => {
+    if (!path) return '';
+    if (path.startsWith('http')) {
+      return path;
+    }
+    return `https://image.tmdb.org/t/p/w500${path}`;
+  };
+
+  // Render movie cards component
+  const MovieCards = ({ movies }: { movies: Movie[] }) => {
+    if (!movies || movies.length === 0) return null;
+    
+    return (
+      <div className="rounded-lg p-4 bg-muted/50 border border-border shadow-sm w-full mt-2">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {t.found} {movies.length} {t.movies}
+          </h3>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {movies.slice(0, 4).map((movie) => (
+            <div 
+              key={movie.id}
+              className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
+              onClick={() => {
+                setSelectedMovie(movie);
+                setDialogOpen(true);
+              }}
+            >
+              <div className="relative aspect-[2/3] w-full overflow-hidden">
+                <div className={cn(
+                  "absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center",
+                  !imgErrors[movie.id] && movie.poster_path && "opacity-0"
+                )}>
+                  <ImageOff className="h-8 w-8 text-gray-400" />
+                </div>
+                
+                {movie.poster_path && !imgErrors[movie.id] && (
+                  <img
+                    src={getPosterUrl(movie.poster_path)}
+                    alt={movie.title}
+                    className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                    loading="lazy"
+                    onError={() => handleImageError(movie.id)}
+                  />
+                )}
+                
+                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 z-10">
+                  <h4 className="text-white font-medium text-xs truncate">{movie.title}</h4>
+                  <div className="flex items-center gap-2 text-xs text-white/80">
+                    <span className="flex items-center gap-1">
+                      <Star className="w-2 h-2 text-yellow-500" />
+                      {(movie.vote_average !== undefined ? movie.vote_average : 0).toFixed(1)}
+                    </span>
+                    {getYear(movie) && (
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-2 h-2" />
+                        {getYear(movie)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {movies.length > 4 && (
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="w-full text-xs"
+            onClick={() => {
+              // Show all movies in dialog
+              setSelectedMovie(movies[0]);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            {t.showMore} ({movies.length - 4})
+          </Button>
+        )}
+      </div>
+    );
+  };
+
   // Localized text based on detected language
   const t = {
     en: {
@@ -183,7 +271,17 @@ export function ChatMovie() {
       thinking: "Thinking...",
       searching: "Searching for movies...",
       inputPlaceholder: "Describe the movie you want to watch...",
-      hintText: "You can ask any movie-related questions or describe the type of movie you want to watch"
+      hintText: "You can ask any movie-related questions or describe the type of movie you want to watch",
+      movieResults: "Movie Results",
+      found: "Found",
+      movies: "movies",
+      clickForDetails: "Click card for details",
+      showMore: "Show more movies",
+      favorite: "Favorite",
+      favorited: "Favorited",
+      noOverview: "No overview available",
+      viewDetails: "View Details",
+      watchTrailer: "Watch Trailer"
     },
     zh: {
       title: "电影AI助手",
@@ -193,7 +291,17 @@ export function ChatMovie() {
       thinking: "思考中...",
       searching: "正在搜索电影...",
       inputPlaceholder: "描述您想看的电影...",
-      hintText: "您可以提问任何与电影相关的问题，或描述您想观看的电影类型"
+      hintText: "您可以提问任何与电影相关的问题，或描述您想观看的电影类型",
+      movieResults: "电影结果",
+      found: "找到",
+      movies: "部电影",
+      clickForDetails: "点击卡片查看详情",
+      showMore: "显示更多电影",
+      favorite: "收藏",
+      favorited: "已收藏",
+      noOverview: "暂无简介",
+      viewDetails: "查看详情",
+      watchTrailer: "观看预告片"
     }
   }[language];
 
@@ -251,39 +359,75 @@ export function ChatMovie() {
             </div>
           ) : (
             <>
+              {/* Display messages with tool invocations */}
               {messages.map((message, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "flex",
-                    message.role === 'assistant' ? "justify-start" : "justify-end"
-                  )}
-                >
+                <div key={i} className="space-y-2">
+                  {/* Regular message */}
                   <div
                     className={cn(
-                      "rounded-lg px-4 py-2 max-w-[85%] shadow-sm",
-                      message.role === 'assistant' 
-                        ? "bg-muted text-muted-foreground" 
-                        : "bg-primary text-primary-foreground"
+                      "flex",
+                      message.role === 'assistant' ? "justify-start" : "justify-end"
                     )}
                   >
-                    {message.content}
+                    <div
+                      className={cn(
+                        "rounded-lg px-4 py-2 max-w-[85%] shadow-sm",
+                        message.role === 'assistant' 
+                          ? "bg-muted text-muted-foreground" 
+                          : "bg-primary text-primary-foreground"
+                      )}
+                    >
+                      {message.content}
+                    </div>
                   </div>
+                  
+                  {/* Tool invocations */}
+                  {message.toolInvocations?.map((toolInvocation) => {
+                    const { toolName, toolCallId, state } = toolInvocation;
+                    
+                    // Handle searchMovies tool
+                    if (toolName === 'searchMovies') {
+                      if (state === 'partial-call') {
+                        // Loading state
+                        return (
+                          <div key={toolCallId} className="flex justify-start w-full">
+                            <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>{t.searching}</span>
+                            </div>
+                          </div>
+                        );
+                      } else if (state === 'result') {
+                        // Result state
+                        const { result } = toolInvocation as any;
+                        if (result && result.movies && result.movies.length > 0) {
+                          return (
+                            <div key={toolCallId} className="flex justify-start w-full">
+                              <MovieCards movies={result.movies} />
+                            </div>
+                          );
+                        } else {
+                          // No movies found
+                          return (
+                            <div key={toolCallId} className="flex justify-start w-full">
+                              <div className="bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 rounded-lg px-4 py-2 flex items-center gap-2">
+                                <X className="h-4 w-4" />
+                                <span>
+                                  {language === 'en' 
+                                    ? "No movies found matching your criteria. Try a different description."
+                                    : "找不到符合您条件的电影。请尝试不同的描述。"}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        }
+                      }
+                    }
+                    
+                    return null;
+                  })}
                 </div>
               ))}
-              
-              {/* Movie search results display */}
-              {showMovies && movies.length > 0 && !error && (
-                <div className="flex justify-start w-full">
-                  <div className="max-w-full w-full">
-                    <MovieSearchResults 
-                      movies={movies} 
-                      onClose={() => setShowMovies(false)}
-                      language={language}
-                    />
-                  </div>
-                </div>
-              )}
               
               {/* Error message */}
               {error && (
@@ -302,10 +446,10 @@ export function ChatMovie() {
         </div>
         
         {/* Status indicator */}
-        {(isLoading || isSearching) && (
+        {isLoading && (
           <div className="flex items-center justify-center gap-2 text-muted-foreground p-2 border-t border-muted">
             <Loader2 className="h-4 w-4 animate-spin" />
-            <span className="text-sm">{isLoading ? t.thinking : t.searching}</span>
+            <span className="text-sm">{t.thinking}</span>
           </div>
         )}
         
@@ -318,18 +462,107 @@ export function ChatMovie() {
             value={input}
             onChange={handleInputChange}
             placeholder={t.inputPlaceholder}
-            disabled={isLoading || isSearching}
+            disabled={isLoading}
             className="flex-1"
           />
           <Button 
             type="submit" 
-            disabled={isLoading || isSearching || !input.trim()}
+            disabled={isLoading || !input.trim()}
             className="px-3"
           >
             <Send className="h-4 w-4" />
           </Button>
         </form>
       </Card>
+
+      {/* Movie detail dialog */}
+      {selectedMovie && (
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogContent className="max-w-3xl p-0 overflow-hidden">
+            <DialogHeader className="p-4 bg-primary text-primary-foreground">
+              <DialogTitle className="text-xl">{selectedMovie.title}</DialogTitle>
+            </DialogHeader>
+            
+            <div className="p-4">
+              {/* Selected movie details */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                  {(!selectedMovie.poster_path || imgErrors[selectedMovie.id]) && <ImageOff className="h-16 w-16 text-gray-400" />}
+                  
+                  {selectedMovie.poster_path && !imgErrors[selectedMovie.id] && (
+                    <img
+                      src={getPosterUrl(selectedMovie.poster_path)}
+                      alt={selectedMovie.title}
+                      className="w-full h-full object-cover"
+                      onError={() => handleImageError(selectedMovie.id)}
+                    />
+                  )}
+                </div>
+                
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex items-center gap-1 text-sm bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded-full">
+                      <Star className="w-4 h-4 text-yellow-500" />
+                      <span>{(selectedMovie.vote_average !== undefined ? selectedMovie.vote_average : 0).toFixed(1)}</span>
+                    </div>
+                    
+                    {getYear(selectedMovie) && (
+                      <div className="flex items-center gap-1 text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-1 rounded-full">
+                        <Calendar className="w-4 h-4" />
+                        <span>{getYear(selectedMovie)}</span>
+                      </div>
+                    )}
+                    
+                    {/* Favorite button */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        "ml-auto text-muted-foreground",
+                        favoriteMovies[selectedMovie.id] && "text-red-500"
+                      )}
+                      onClick={(e) => toggleFavorite(selectedMovie.id, e)}
+                    >
+                      <Heart className={cn("h-4 w-4 mr-1", favoriteMovies[selectedMovie.id] && "fill-current")} />
+                      {favoriteMovies[selectedMovie.id] ? t.favorited : t.favorite}
+                    </Button>
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {getGenres(selectedMovie).map((genre, i) => (
+                      <span key={i} className="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-full">
+                        {genre}
+                      </span>
+                    ))}
+                  </div>
+                  
+                  <p className="text-sm text-muted-foreground mb-4 max-h-[150px] overflow-y-auto">
+                    {selectedMovie.overview || t.noOverview}
+                  </p>
+                  
+                  <div className="mt-auto space-y-2">
+                    <Button 
+                      className="w-full"
+                      onClick={() => window.open(`https://www.themoviedb.org/movie/${selectedMovie.id}`, '_blank')}
+                    >
+                      <Info className="mr-2 h-4 w-4" />
+                      {t.viewDetails}
+                    </Button>
+                    
+                    <Button 
+                      className="w-full flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => window.open(`https://www.youtube.com/results?search_query=${encodeURIComponent(selectedMovie.title + ' trailer')}`, '_blank')}
+                    >
+                      <Play className="h-4 w-4" />
+                      {t.watchTrailer}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Bottom hint */}
       <div className="text-center text-xs text-muted-foreground">
