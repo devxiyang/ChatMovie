@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getMoviesByMood } from '@/lib/tmdb';
+import { getMoviesByMood, discoverMoviesByMood } from '@/lib/tmdb';
 
 // 定义电影类型
 interface Movie {
@@ -47,12 +47,21 @@ export default function MoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [useDiscover, setUseDiscover] = useState(true); // 默认使用discover接口
   
   useEffect(() => {
     async function fetchMovies() {
       try {
         setLoading(true);
-        const moviesData = await getMoviesByMood(mood);
+        let moviesData;
+        
+        // 根据选择使用不同的API函数
+        if (useDiscover) {
+          moviesData = await discoverMoviesByMood(mood);
+        } else {
+          moviesData = await getMoviesByMood(mood);
+        }
+        
         // 将API返回的数据转换为我们的Movie类型
         const formattedMovies: Movie[] = moviesData.map(movie => ({
           id: movie.id,
@@ -78,7 +87,7 @@ export default function MoviesPage() {
     if (mood) {
       fetchMovies();
     }
-  }, [mood]);
+  }, [mood, useDiscover]);
   
   // 当情绪不存在时的处理
   if (mood && !moodNames[mood]) {
@@ -113,6 +122,29 @@ export default function MoviesPage() {
             <span className="mr-3 text-3xl">{moodNames[mood]?.emoji}</span>
             <span>当你感到{moodNames[mood]?.name}时的电影推荐</span>
           </h1>
+        </div>
+        
+        <div className="mb-6 flex justify-center space-x-2">
+          <button
+            onClick={() => setUseDiscover(true)}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              useDiscover 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-gray-100 dark:bg-gray-800'
+            }`}
+          >
+            精准推荐
+          </button>
+          <button
+            onClick={() => setUseDiscover(false)}
+            className={`px-4 py-2 rounded-lg transition-colors ${
+              !useDiscover 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-gray-100 dark:bg-gray-800'
+            }`}
+          >
+            关键词推荐
+          </button>
         </div>
         
         {loading ? (
