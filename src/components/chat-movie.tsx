@@ -6,8 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
-import { MovieDetail } from '@/components/movie-detail';
-import { discoverMovies } from '@/lib/tmdb';
+import { MovieSearchResults } from '@/components/movie-search-results';
 
 // Define the expected structure of the searchMovies tool result
 interface SearchMoviesResult {
@@ -19,6 +18,7 @@ export function ChatMovie() {
   const [movies, setMovies] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showMovies, setShowMovies] = useState(true); // 控制是否显示电影结果
   
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
@@ -52,6 +52,7 @@ export function ChatMovie() {
           // Handle the search results
           if (args.movies && Array.isArray(args.movies) && args.movies.length > 0) {
             setMovies(args.movies);
+            setShowMovies(true); // 显示电影结果
           } else {
             setError("No movies found matching your criteria. Try a different description.");
           }
@@ -95,6 +96,18 @@ export function ChatMovie() {
               </div>
             </div>
           ))}
+          
+          {/* 电影搜索结果展示 */}
+          {showMovies && movies.length > 0 && !error && (
+            <div className="flex justify-start w-full">
+              <div className="max-w-full w-full">
+                <MovieSearchResults 
+                  movies={movies} 
+                  onClose={() => setShowMovies(false)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -108,14 +121,6 @@ export function ChatMovie() {
       {error && (
         <div className="text-center text-red-500 py-4">
           {error}
-        </div>
-      )}
-
-      {movies.length > 0 && !error && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {movies.map((movie) => (
-            <MovieDetail key={movie.id} {...movie} />
-          ))}
         </div>
       )}
 
