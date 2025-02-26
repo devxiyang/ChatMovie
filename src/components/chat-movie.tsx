@@ -9,81 +9,67 @@ import { Loader2 } from "lucide-react";
 import { MovieDetail } from '@/components/movie-detail';
 import { discoverMovies } from '@/lib/tmdb';
 
+// Define the expected structure of the searchMovies tool result
+interface SearchMoviesResult {
+  count: number;
+  movies: any[];
+}
+
 export function ChatMovie() {
   const [movies, setMovies] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
     onResponse: (response) => {
-      console.log('Chat response received:', response);
+      console.log('Chat response received');
       setError(null);
       setMovies([]);
     },
-    onFinish: async (message) => {
-      try {
-        console.log('Processing finished message:', message);
-        setIsSearching(true);
-        setError(null);
-        
-        // Parse the response as JSON
-        let response;
-        try {
-          response = JSON.parse(message.content);
-          console.log('Parsed response:', response);
-        } catch (e) {
-          console.error('Failed to parse response:', e);
-          setError("Failed to parse AI response. Please try again.");
-          return;
-        }
-        
-        // Update the message to show only the text response
-        if (response.text) {
-          console.log('Updating message with text:', response.text);
-          const updatedMessages = messages.map((msg, i) => 
-            i === messages.length - 1 ? { ...msg, content: response.text } : msg
-          );
-          setMessages(updatedMessages);
-        } else {
-          console.warn('No text response found in:', response);
-        }
-
-        if (!response.search) {
-          console.warn('No search parameters found in response');
-          setError("Could not understand the search criteria. Please try again with a different description.");
-          return;
-        }
-
-        // Build search options from the validated response
-        const searchOptions = {
-          language: 'en-US',
-          with_genres: response.search.genres,
-          with_keywords: response.search.keywords,
-          include_adult: false,
-          ...response.search.options
-        };
-        console.log('Search options:', searchOptions);
-
-        // Perform the search
-        const movieResults = await discoverMovies(searchOptions);
-        console.log('Movie results:', movieResults);
-        
-        if (movieResults.length === 0) {
-          setError("No movies found matching your criteria. Try a different description.");
-        } else {
-          setMovies(movieResults);
-        }
-      } catch (error) {
-        console.error('Failed to search movies:', error);
-        setError("Sorry, something went wrong. Please try again with a different description.");
-      } finally {
-        setIsSearching(false);
+    onToolCall: async (event: any) => {
+      console.log('Tool call received:', event);
+      
+      // Check if this is the searchMovies function call
+      const toolCall = event.toolCall;
+      if (!toolCall) {
+        console.log('No toolCall in event', event);
+        return;
       }
+      
+      if (toolCall.type === 'function' && 
+          toolCall.function?.name === 'searchMovies') {
+        setIsSearching(true);
+        try {
+          // Parse arguments if needed
+          const rawArgs = toolCall.function.arguments;
+          const args = typeof rawArgs === 'string' 
+            ? JSON.parse(rawArgs) 
+            : rawArgs;
+            
+          console.log('Search movies args:', args);
+          
+          // Handle the search results
+          if (args.movies && Array.isArray(args.movies) && args.movies.length > 0) {
+            setMovies(args.movies);
+          } else {
+            setError("No movies found matching your criteria. Try a different description.");
+          }
+        } catch (e) {
+          console.error('Error processing search results:', e);
+          setError("Failed to process movie search results.");
+        } finally {
+          setIsSearching(false);
+        }
+      }
+    },
+    onFinish: async () => {
+      setIsSearching(false);
     },
     onError: (error) => {
       console.error('Chat error:', error);
       setError("An error occurred while communicating with the AI. Please try again.");
+      setIsSearching(false);
     }
   });
 

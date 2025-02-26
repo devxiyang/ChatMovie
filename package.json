@@ -7,7 +7,7 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@ai-sdk/google": "^1.1.16",
+    "@ai-sdk/google": "^1.1.17",
     "@ai-sdk/openai": "^1.1.13",
     "@radix-ui/react-checkbox": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.6",
