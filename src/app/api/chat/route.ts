@@ -1,5 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { StreamingTextResponse } from 'ai';
+import { experimental_StreamingReactResponse as StreamingReactResponse } from 'ai';
 import { z } from 'zod';
 
 // Initialize Google Generative AI
@@ -51,12 +51,17 @@ export async function POST(req: Request) {
     const validatedResponse = movieSearchSchema.parse(parsedResponse);
     
     // Return the response as a streaming response
-    return new StreamingTextResponse(new ReadableStream({
-      async start(controller) {
-        controller.enqueue(JSON.stringify(validatedResponse));
-        controller.close();
+    return new StreamingReactResponse(
+      new ReadableStream({
+        async start(controller) {
+          controller.enqueue(JSON.stringify(validatedResponse));
+          controller.close();
+        }
+      }),
+      {
+        data: validatedResponse,
       }
-    }));
+    );
   } catch (error) {
     console.error('Failed to parse or validate response:', error);
     return new Response(JSON.stringify({ error: 'Failed to process request' }), {

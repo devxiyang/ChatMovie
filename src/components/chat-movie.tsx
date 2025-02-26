@@ -10,12 +10,15 @@ import { MovieDetail } from '@/components/movie-detail';
 export function ChatMovie() {
   const [movies, setMovies] = useState<any[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
     api: '/api/chat',
     onFinish: async (message) => {
       try {
         setIsSearching(true);
+        setError(null);
+        
         // Parse AI response JSON string
         const response = JSON.parse(message.content);
         
@@ -30,9 +33,15 @@ export function ChatMovie() {
         
         // Get movie list
         const movieResults = await discoverMovies(searchOptions);
-        setMovies(movieResults);
+        
+        if (movieResults.length === 0) {
+          setError("No movies found matching your criteria. Try a different description.");
+        } else {
+          setMovies(movieResults);
+        }
       } catch (error) {
         console.error('Failed to search movies:', error);
+        setError("Sorry, something went wrong. Please try again with a different description.");
       } finally {
         setIsSearching(false);
       }
@@ -71,7 +80,13 @@ export function ChatMovie() {
         </div>
       )}
 
-      {movies.length > 0 && (
+      {error && (
+        <div className="text-center text-red-500 py-4">
+          {error}
+        </div>
+      )}
+
+      {movies.length > 0 && !error && (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
           {movies.map((movie) => (
             <MovieDetail key={movie.id} {...movie} />
