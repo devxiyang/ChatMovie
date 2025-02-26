@@ -26,7 +26,9 @@ const movieSearchSchema = z.object({
 // System prompt to guide AI in understanding user's movie preferences
 const systemPrompt = `You are a professional movie recommendation assistant. Your task is to help users find movies based on their preferences.
 
-When a user describes what kind of movie they want to watch, analyze their requirements and provide appropriate search parameters.
+When a user describes what kind of movie they want to watch:
+1. First respond in a friendly way, acknowledging their request
+2. Then provide the search parameters that best match their requirements
 
 Genre ID reference:
 28: Action
@@ -48,26 +50,62 @@ Genre ID reference:
 10752: War
 37: Western
 
-First respond to the user in a friendly way, then provide the search parameters.`;
+Example:
+User: "I want to watch a Jackie Chan action movie"
+Assistant: I'll help you find some exciting Jackie Chan action movies! Let me search for those for you.`;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
-  const userMessage = messages[messages.length - 1].content;
+  try {
+    const { messages } = await req.json();
+    const userMessage = messages[messages.length - 1].content;
 
-  // First, let's get a friendly response
-  const response = await generateObject({
-    model: google('gemini-2.0-flash'),
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userMessage }
-    ],
-    schema: movieSearchSchema,
-  });
+    console.log('User message:', userMessage);
 
-  // Format the response
-  const headers = new Headers({
-    'Content-Type': 'application/json',
-  });
+    // First, get a friendly response using generateObject
+    const textResponse = await generateObject({
+      model: google('gemini-2.0-flash'),
+      messages: [
+        { role: 'system', content: 'You are a friendly movie assistant. Respond to the user\'s request with a brief, encouraging message.' },
+        { role: 'user', content: userMessage }
+      ],
+      schema: z.object({
+        response: z.string().describe('A friendly response to the user\'s movie request')
+      })
+    });
 
-  return new Response(JSON.stringify(response), { headers });
+    console.log('Text response:', textResponse);
+
+    // Then, get the search parameters
+    const searchParams = await generateObject({
+      model: google('gemini-2.0-flash'),
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userMessage }
+      ],
+      schema: movieSearchSchema,
+    });
+
+    console.log('Search params:', searchParams);
+
+    // Combine both responses
+    const response = {
+      text: textResponse.object.response,
+      search: searchParams.object.search
+    };
+
+    console.log('Final response:', response);
+
+    // Format the response
+    const headers = new Headers({
+      'Content-Type': 'application/json',
+    });
+
+    return new Response(JSON.stringify(response), { headers });
+  } catch (error) {
+    console.error('API error:', error);
+    return new Response(JSON.stringify({ error: 'Failed to process request' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
 } 

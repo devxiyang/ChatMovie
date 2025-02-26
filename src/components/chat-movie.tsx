@@ -14,22 +14,43 @@ export function ChatMovie() {
   const [isSearching, setIsSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, isLoading, setMessages } = useChat({
     api: '/api/chat',
     onResponse: (response) => {
-      // Reset any previous errors when we get a new response
+      console.log('Chat response received:', response);
       setError(null);
       setMovies([]);
     },
     onFinish: async (message) => {
       try {
+        console.log('Processing finished message:', message);
         setIsSearching(true);
         setError(null);
         
         // Parse the response as JSON
-        const response = JSON.parse(message.content);
+        let response;
+        try {
+          response = JSON.parse(message.content);
+          console.log('Parsed response:', response);
+        } catch (e) {
+          console.error('Failed to parse response:', e);
+          setError("Failed to parse AI response. Please try again.");
+          return;
+        }
         
+        // Update the message to show only the text response
+        if (response.text) {
+          console.log('Updating message with text:', response.text);
+          const updatedMessages = messages.map((msg, i) => 
+            i === messages.length - 1 ? { ...msg, content: response.text } : msg
+          );
+          setMessages(updatedMessages);
+        } else {
+          console.warn('No text response found in:', response);
+        }
+
         if (!response.search) {
+          console.warn('No search parameters found in response');
           setError("Could not understand the search criteria. Please try again with a different description.");
           return;
         }
@@ -42,9 +63,11 @@ export function ChatMovie() {
           include_adult: false,
           ...response.search.options
         };
+        console.log('Search options:', searchOptions);
 
         // Perform the search
         const movieResults = await discoverMovies(searchOptions);
+        console.log('Movie results:', movieResults);
         
         if (movieResults.length === 0) {
           setError("No movies found matching your criteria. Try a different description.");
@@ -57,6 +80,10 @@ export function ChatMovie() {
       } finally {
         setIsSearching(false);
       }
+    },
+    onError: (error) => {
+      console.error('Chat error:', error);
+      setError("An error occurred while communicating with the AI. Please try again.");
     }
   });
 
@@ -78,10 +105,7 @@ export function ChatMovie() {
                     : 'bg-muted'
                 }`}
               >
-                {/* Display only the text response, not the JSON */}
-                {typeof message.content === 'string' 
-                  ? message.content.replace(/\{[\s\S]*?\}/g, '').trim()
-                  : JSON.stringify(message.content)}
+                {message.content}
               </div>
             </div>
           ))}
