@@ -1,17 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import Image from 'next/image';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Play, Star, Calendar, Info, X } from 'lucide-react';
-import { MovieVideo } from '@/lib/tmdb';
+import { Play, Star, Calendar, Info, X, ImageOff, ThumbsUp, Heart, Plus } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Movie {
   id: number;
   title: string;
   overview: string;
-  poster_path: string;
+  poster_path: string | null;
   release_date?: string;
   vote_average: number;
   genres?: string[] | { id: number; name: string }[];
@@ -25,6 +24,8 @@ interface MovieSearchResultsProps {
 export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps) {
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [visibleMovies, setVisibleMovies] = useState(8);
+  const [favoriteMovies, setFavoriteMovies] = useState<Record<number, boolean>>({});
 
   if (!movies || movies.length === 0) {
     return null;
@@ -53,17 +54,39 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
   };
 
   // 构建海报URL
-  const getPosterUrl = (path: string) => {
+  const getPosterUrl = (path: string | null) => {
+    if (!path) return '';
     if (path.startsWith('http')) {
       return path;
     }
     return `https://image.tmdb.org/t/p/w500${path}`;
   };
 
+  // 切换收藏状态
+  const toggleFavorite = (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoriteMovies(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
+  };
+
+  // 显示更多电影
+  const handleShowMore = () => {
+    setVisibleMovies(prev => Math.min(prev + 8, movies.length));
+  };
+
   return (
     <div className="mt-4 mb-6 w-full">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="text-lg font-semibold">找到 {movies.length} 部电影</h3>
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <span>找到 {movies.length} 部电影</span>
+          {movies.length > 0 && (
+            <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">
+              点击卡片查看详情
+            </span>
+          )}
+        </h3>
         {onClose && (
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
             <X size={16} />
@@ -72,24 +95,47 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
       </div>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {movies.slice(0, 8).map((movie) => (
+        {movies.slice(0, visibleMovies).map((movie) => (
           <div 
             key={movie.id}
-            className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer"
+            className="bg-card rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer group"
             onClick={() => {
               setSelectedMovie(movie);
               setDialogOpen(true);
             }}
           >
-            <div className="relative aspect-[2/3] w-full">
-              <Image
-                src={getPosterUrl(movie.poster_path)}
-                alt={movie.title}
-                fill
-                className="object-cover"
-                sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6">
+            <div className="relative aspect-[2/3] w-full overflow-hidden">
+              <div className="absolute inset-0 bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                <ImageOff className="h-12 w-12 text-gray-400" />
+              </div>
+              
+              {movie.poster_path && (
+                <img
+                  src={getPosterUrl(movie.poster_path)}
+                  alt={movie.title}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                  loading="lazy"
+                  onError={(e) => {
+                    console.error(`Image failed to load: ${getPosterUrl(movie.poster_path)}`);
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              )}
+              
+              {/* 收藏按钮 */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className={cn(
+                  "absolute top-2 right-2 h-8 w-8 rounded-full bg-black/50 text-white opacity-0 group-hover:opacity-100 transition-opacity",
+                  favoriteMovies[movie.id] && "opacity-100 text-red-500"
+                )}
+                onClick={(e) => toggleFavorite(movie.id, e)}
+              >
+                <Heart className={cn("h-4 w-4", favoriteMovies[movie.id] && "fill-current")} />
+              </Button>
+              
+              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2 pt-6 z-10">
                 <h4 className="text-white font-medium text-sm truncate">{movie.title}</h4>
                 <div className="flex items-center gap-2 text-xs text-white/80">
                   <span className="flex items-center gap-1">
@@ -110,17 +156,16 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
       </div>
       
       {/* 更多电影按钮 */}
-      {movies.length > 8 && (
+      {visibleMovies < movies.length && (
         <div className="mt-3 text-center">
           <Button 
             variant="outline" 
             size="sm"
-            onClick={() => {
-              // 这里可以实现显示更多电影的逻辑
-              console.log('显示更多电影');
-            }}
+            onClick={handleShowMore}
+            className="gap-1"
           >
-            显示更多 ({movies.length - 8} 部)
+            <Plus className="h-4 w-4" />
+            显示更多电影 ({movies.length - visibleMovies})
           </Button>
         </div>
       )}
@@ -134,13 +179,20 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
             </DialogHeader>
             
             <div className="grid md:grid-cols-2 gap-4 p-4">
-              <div className="relative aspect-[2/3] rounded-lg overflow-hidden">
-                <Image
-                  src={getPosterUrl(selectedMovie.poster_path)}
-                  alt={selectedMovie.title}
-                  fill
-                  className="object-cover"
-                />
+              <div className="relative aspect-[2/3] rounded-lg overflow-hidden bg-gray-200 dark:bg-gray-800 flex items-center justify-center">
+                {!selectedMovie.poster_path && <ImageOff className="h-16 w-16 text-gray-400" />}
+                
+                {selectedMovie.poster_path && (
+                  <img
+                    src={getPosterUrl(selectedMovie.poster_path)}
+                    alt={selectedMovie.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      console.error(`Detail image failed to load: ${getPosterUrl(selectedMovie.poster_path)}`);
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
               </div>
               
               <div className="flex flex-col">
@@ -156,6 +208,20 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
                       <span>{getYear(selectedMovie)}</span>
                     </div>
                   )}
+                  
+                  {/* 收藏按钮 */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={cn(
+                      "ml-auto text-muted-foreground",
+                      favoriteMovies[selectedMovie.id] && "text-red-500"
+                    )}
+                    onClick={(e) => toggleFavorite(selectedMovie.id, e)}
+                  >
+                    <Heart className={cn("h-4 w-4 mr-1", favoriteMovies[selectedMovie.id] && "fill-current")} />
+                    {favoriteMovies[selectedMovie.id] ? '已收藏' : '收藏'}
+                  </Button>
                 </div>
                 
                 <div className="flex flex-wrap gap-1 mb-3">
@@ -166,7 +232,7 @@ export function MovieSearchResults({ movies, onClose }: MovieSearchResultsProps)
                   ))}
                 </div>
                 
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-4 max-h-[150px] overflow-y-auto">
                   {selectedMovie.overview || "暂无简介"}
                 </p>
                 
