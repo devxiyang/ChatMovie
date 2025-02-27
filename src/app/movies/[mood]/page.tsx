@@ -148,11 +148,10 @@ export default function MoviePage() {
     async function fetchMovies() {
       try {
         setLoading(true);
-        const response = await fetch(`/api/movies/${mood}`);
-        if (!response.ok) throw new Error('Failed to fetch movies');
-        const data = await response.json();
+        const data = await discoverMoviesByMood(mood);
         setMovies(data);
         setError(null);
+        setLoading(false);
         
         // 模拟解码过程
         setTimeout(() => {
