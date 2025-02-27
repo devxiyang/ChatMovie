@@ -32,6 +32,11 @@ interface MovieData {
       key: string;
       site: string;
       type: string;
+      name?: string;
+      id?: string;
+      published_at?: string;
+      size?: number;
+      official?: boolean;
     }[];
   };
 }
@@ -148,15 +153,32 @@ export default function MoviePage() {
     async function fetchMovies() {
       try {
         setLoading(true);
-        // 使用优化后的tmdb.ts中的方法获取电影（仅返回评分7+且有视频的电影）
+        // 使用优化后的tmdb.ts中的方法获取电影（现在允许部分电影没有视频）
         const data = await discoverMoviesByMood(mood);
         console.log('获取到的电影数据:', data); // 调试日志
         
         // 添加调试信息
-        if (data.length > 0) {
-          console.log(`共获取 ${data.length} 部电影`);
-          console.log(`第一部电影 "${data[0].title}" 的视频信息:`, data[0].videos);
+        if (data.length === 0) {
+          console.error('未找到符合条件的电影');
+          setError('未找到符合条件的电影，请尝试其他心情');
+          setLoading(false);
+          return;
         }
+        
+        console.log(`共获取 ${data.length} 部电影`);
+        
+        // 打印视频数据统计
+        let moviesWithVideos = 0;
+        let totalVideos = 0;
+        
+        data.forEach((movie, index) => {
+          const videoCount = movie.videos?.results?.length || 0;
+          totalVideos += videoCount;
+          if (videoCount > 0) moviesWithVideos++;
+          console.log(`电影${index+1}: "${movie.title}" - ${videoCount}个视频`);
+        });
+        
+        console.log(`统计: ${moviesWithVideos}/${data.length}部电影有视频，共${totalVideos}个视频`);
         
         // 处理电影数据，确保所有必要的字段都存在
         const processedMovies = data.map(movie => {
@@ -166,21 +188,16 @@ export default function MoviePage() {
             : movie.poster_path 
               ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
               : '/placeholder.png';
-              
+          
+          // 确保不会出现undefined错误
           return {
             ...movie,
-            poster_path
+            poster_path,
+            videos: movie.videos || { results: [] } // 确保videos对象存在
           };
         });
         
-        // 添加对视频的检查
-        const moviesWithVideos = processedMovies.filter(movie => 
-          movie.videos && movie.videos.results && movie.videos.results.length > 0
-        );
-        
-        if (moviesWithVideos.length < processedMovies.length) {
-          console.warn(`警告: ${processedMovies.length - moviesWithVideos.length} 部电影没有视频信息`);
-        }
+        console.log(`处理完成 ${processedMovies.length} 部电影数据`);
         
         setMovies(processedMovies);
         setError(null);
@@ -192,7 +209,7 @@ export default function MoviePage() {
         }, 2000);
       } catch (err) {
         console.error('Error fetching movies:', err);
-        setError('Failed to load movies');
+        setError('加载电影失败，请稍后重试或选择其他心情');
         setLoading(false);
       }
     }
@@ -241,35 +258,70 @@ export default function MoviePage() {
 
   const moodInfo = moodToMatrix[mood] || { name: 'UNKNOWN', code: '000000' };
 
-  // 修复获取预告片逻辑
+  // 改进获取预告片的逻辑
   const getTrailer = () => {
-    if (!currentMovie?.videos?.results) {
+    if (!currentMovie?.videos?.results || currentMovie.videos.results.length === 0) {
       console.log(`当前电影 "${currentMovie?.title}" 没有视频信息`);
       return null;
     }
     
-    console.log(`当前电影 "${currentMovie.title}" 有 ${currentMovie.videos.results.length} 个视频`);
+    const videos = currentMovie.videos.results;
+    console.log(`当前电影 "${currentMovie.title}" 有 ${videos.length} 个视频`);
     
-    // 首先尝试寻找类型为'Trailer'的YouTube视频
-    let trailer = currentMovie.videos.results.find(
+    // 打印所有可用视频的类型，帮助调试
+    videos.forEach((video, index) => {
+      console.log(`视频 ${index + 1}: 类型=${video.type}, 站点=${video.site}, ID=${video.key}`);
+    });
+    
+    // 优先级：
+    // 1. 官方预告片 (Official Trailer)
+    // 2. 普通预告片 (Trailer)
+    // 3. 首个预告片 (Teaser)
+    // 4. 任何YouTube视频
+    
+    // 尝试找官方预告片
+    let trailer = videos.find(
+      video => video.site === 'YouTube' && 
+               video.type === 'Trailer' && 
+               (video.name?.toLowerCase().includes('official') || 
+                video.name?.toLowerCase().includes('final'))
+    );
+    
+    if (trailer) {
+      console.log(`找到官方预告片: ${trailer.name} (${trailer.key})`);
+      return trailer;
+    }
+    
+    // 尝试找任何预告片
+    trailer = videos.find(
       video => video.site === 'YouTube' && video.type === 'Trailer'
     );
     
-    // 如果没有找到，尝试任何YouTube视频
-    if (!trailer) {
-      console.log(`没有找到类型为'Trailer'的YouTube视频，尝试任何YouTube视频`);
-      trailer = currentMovie.videos.results.find(
-        video => video.site === 'YouTube'
-      );
+    if (trailer) {
+      console.log(`找到普通预告片: ${trailer.name} (${trailer.key})`);
+      return trailer;
     }
+    
+    // 尝试找预告片剪辑
+    trailer = videos.find(
+      video => video.site === 'YouTube' && video.type === 'Teaser'
+    );
     
     if (trailer) {
-      console.log(`找到视频: ${trailer.type} - ${trailer.key}`);
-    } else {
-      console.log(`没有找到合适的视频`);
+      console.log(`找到预告片剪辑: ${trailer.name} (${trailer.key})`);
+      return trailer;
     }
     
-    return trailer;
+    // 尝试找任何YouTube视频
+    trailer = videos.find(video => video.site === 'YouTube');
+    
+    if (trailer) {
+      console.log(`找到普通YouTube视频: ${trailer.name} (${trailer.key})`);
+      return trailer;
+    }
+    
+    console.log(`无法找到合适的视频预告片`);
+    return null;
   };
 
   const trailer = getTrailer();
@@ -280,7 +332,7 @@ export default function MoviePage() {
         <div className="text-center">
           <div className="inline-block h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-sm">LOADING SIMULATIONS...</p>
-          <p className="text-xs mt-2">搜索高评分（7+）且有视频预告的电影中...</p>
+          <p className="text-xs mt-2">正在根据你的心情挑选合适的电影...</p>
         </div>
       </div>
     );
@@ -291,7 +343,7 @@ export default function MoviePage() {
       <div className="h-screen bg-black text-green-500 flex items-center justify-center">
         <div className="max-w-md text-center border border-green-500/30 p-4">
           <p className="text-red-500 mb-2">SYSTEM ERROR</p>
-          <p className="text-sm mb-4">{error || 'No movies found with rating 7+ and video trailers'}</p>
+          <p className="text-sm mb-4">{error || '未找到符合条件的电影'}</p>
           <button 
             onClick={() => router.push('/')}
             className="text-xs border border-green-500 px-3 py-1 hover:bg-green-900/20"
@@ -538,8 +590,15 @@ export default function MoviePage() {
                     
                     {/* 视频状态信息 */}
                     {showVideo && !trailer && (
-                      <div className="absolute top-0 left-0 right-0 bg-black/80 text-xs p-1 text-green-500">
-                        {currentMovie.videos?.results?.length ? `有${currentMovie.videos.results.length}个视频但无可用预告片` : '无视频数据'}
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/80 py-2 px-3 text-center">
+                        <p className={`text-sm ${viewMode === 'matrix' ? 'text-green-400' : 'text-blue-300'}`}>
+                          {currentMovie.videos?.results?.length 
+                            ? `有${currentMovie.videos.results.length}个视频但暂不支持预览` 
+                            : '此电影暂无预告片'}
+                        </p>
+                        <p className={`text-xs mt-1 ${viewMode === 'matrix' ? 'text-green-600' : 'text-blue-500'}`}>
+                          仍然可以根据详细介绍了解这部电影
+                        </p>
                       </div>
                     )}
                     

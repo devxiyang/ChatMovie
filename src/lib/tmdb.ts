@@ -2,6 +2,66 @@
 const TMDB_API_KEY = process.env.NEXT_PUBLIC_TMDB_API_KEY || ''; // 在实际部署时需要添加您的TMDb API密钥
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
 
+// 检查API密钥是否有效，提供友好的错误提示
+const validateApiKey = () => {
+  if (!TMDB_API_KEY) {
+    console.error('警告: TMDb API密钥未设置。请在.env.local文件中添加NEXT_PUBLIC_TMDB_API_KEY=您的密钥');
+    return false;
+  }
+  return true;
+};
+
+// 通用API请求函数，增加重试和错误处理
+const fetchWithRetry = async (url: string, options: RequestInit = {}, retries = 2): Promise<any> => {
+  try {
+    if (!validateApiKey()) {
+      throw new Error('TMDb API密钥未设置或无效');
+    }
+    
+    // 设置超时控制
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10秒超时
+    
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      // 检查特定错误代码
+      if (response.status === 401) {
+        throw new Error('TMDb API密钥无效或已过期');
+      } else if (response.status === 429) {
+        // 达到速率限制，等待后重试
+        if (retries > 0) {
+          const retryAfter = parseInt(response.headers.get('Retry-After') || '2', 10);
+          console.log(`达到API速率限制，将在${retryAfter}秒后重试...`);
+          await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+          return fetchWithRetry(url, options, retries - 1);
+        }
+      }
+      throw new Error(`API请求失败: ${response.status} - ${await response.text()}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        console.error('API请求超时');
+      }
+      if (retries > 0) {
+        console.log(`API请求失败，将重试: ${error.message}`);
+        // 指数退避重试
+        await new Promise(resolve => setTimeout(resolve, (3 - retries) * 1000));
+        return fetchWithRetry(url, options, retries - 1);
+      }
+    }
+    throw error;
+  }
+};
+
 // TMDb 电影类型常量
 export const TMDB_GENRES: Record<number, string> = {
   28: "Action",
@@ -246,17 +306,27 @@ export async function getMoviesByMood(mood: string): Promise<Movie[]> {
 // 获取电影详情和预告片
 export async function getMovieDetails(movieId: number): Promise<any> {
   try {
-    // 添加重试逻辑
+    // 添加强化的重试逻辑
     let attempts = 0;
-    const maxAttempts = 2;
+    const maxAttempts = 3; // 增加最大重试次数
+    let lastError: Error | null = null;
     
     while (attempts < maxAttempts) {
       attempts++;
       try {
         console.log(`获取电影ID ${movieId} 的详情 (尝试 ${attempts}/${maxAttempts})`);
         
-        const response = await fetch(
-          `${TMDB_BASE_URL}/movie/${movieId}?append_to_response=videos&language=en-US`, {
+        // 使用随机延迟避免API限流
+        if (attempts > 1) {
+          const delay = 1000 + Math.random() * 2000;
+          console.log(`等待 ${Math.round(delay)}ms 后重试...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        // 使用增强的fetchWithRetry替代原生fetch
+        const data = await fetchWithRetry(
+          `${TMDB_BASE_URL}/movie/${movieId}?append_to_response=videos&language=en-US`,
+          {
             headers: {
               'Authorization': `Bearer ${TMDB_API_KEY}`,
               'accept': 'application/json'
@@ -264,34 +334,49 @@ export async function getMovieDetails(movieId: number): Promise<any> {
           }
         );
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        // 增强的视频验证逻辑
+        let videosFetched = false;
         
-        const data = await response.json();
-        
-        // 验证视频是否存在
         if (!data.videos || !data.videos.results || data.videos.results.length === 0) {
           console.log(`电影ID ${movieId} 没有视频，尝试单独获取`);
           
           // 如果没有videos字段或结果为空，尝试单独获取视频
-          const videos = await getMovieVideos(movieId);
-          if (videos && videos.length > 0) {
-            data.videos = { results: videos };
-            console.log(`为电影ID ${movieId} 单独获取到 ${videos.length} 个视频`);
+          try {
+            const videos = await getMovieVideos(movieId);
+            if (videos && videos.length > 0) {
+              data.videos = { results: videos };
+              videosFetched = true;
+              console.log(`为电影ID ${movieId} 单独获取到 ${videos.length} 个视频`);
+            } else {
+              console.log(`无法为电影ID ${movieId} 获取视频`);
+            }
+          } catch (videoErr) {
+            console.error(`为电影ID ${movieId} 单独获取视频失败:`, videoErr);
           }
         } else {
+          videosFetched = true;
           console.log(`电影ID ${movieId} 已获取到 ${data.videos.results.length} 个视频`);
         }
         
-        return data;
+        // 如果成功获取到视频或已达到最大重试次数，返回数据
+        if (videosFetched || attempts >= maxAttempts) {
+          return data;
+        }
+        
+        // 否则继续重试
+        console.log(`电影ID ${movieId} 没有视频，将重试...`);
       } catch (err) {
-        if (attempts >= maxAttempts) throw err;
-        // 等待一点时间后重试
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        lastError = err as Error;
+        if (attempts >= maxAttempts) {
+          console.error(`获取电影ID ${movieId} 详情失败，已达最大重试次数:`, err);
+          throw err;
+        }
+        console.log(`获取电影ID ${movieId} 详情失败 (尝试 ${attempts}/${maxAttempts}):`, err);
       }
     }
     
+    // 如果所有重试都失败，抛出最后的错误
+    if (lastError) throw lastError;
     throw new Error(`无法获取电影ID ${movieId} 的详情，已达最大重试次数`);
   } catch (error) {
     console.error(`获取电影ID ${movieId} 的详情失败:`, error);
@@ -302,33 +387,82 @@ export async function getMovieDetails(movieId: number): Promise<any> {
 // 获取电影预告片
 export async function getMovieVideos(movieId: number): Promise<MovieVideo[]> {
   try {
-    const response = await fetch(
-      `${TMDB_BASE_URL}/movie/${movieId}/videos?language=en-US`, {
-        headers: {
-          'Authorization': `Bearer ${TMDB_API_KEY}`,
-          'accept': 'application/json'
-        }
-      }
-    );
+    // 添加重试逻辑
+    let attempts = 0;
+    const maxAttempts = 2;
+    let lastError: Error | null = null;
     
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    while (attempts < maxAttempts) {
+      attempts++;
+      try {
+        console.log(`获取电影ID ${movieId} 的视频 (尝试 ${attempts}/${maxAttempts})`);
+        
+        // 使用随机延迟避免API限流
+        if (attempts > 1) {
+          const delay = 800 + Math.random() * 1200;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        const response = await fetch(
+          `${TMDB_BASE_URL}/movie/${movieId}/videos?language=en-US`, {
+            headers: {
+              'Authorization': `Bearer ${TMDB_API_KEY}`,
+              'accept': 'application/json'
+            },
+            // 增加超时时间
+            signal: AbortSignal.timeout(8000)
+          }
+        );
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        // 增强的视频筛选逻辑
+        // 首先尝试找英文预告片，如果没有，尝试任何语言的预告片
+        let trailers = data.results
+          .filter((video: MovieVideo) => 
+            (video.type === 'Trailer' || video.type === 'Teaser') && 
+            video.site === 'YouTube'
+          )
+          // 按发布日期排序，最新的排在前面
+          .sort((a: MovieVideo, b: MovieVideo) => 
+            new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+          );
+        
+        // 如果没有找到预告片，尝试再次请求其他语言的视频
+        if (trailers.length === 0 && attempts === 1) {
+          console.log(`未找到电影ID ${movieId} 的英文预告片，尝试其他语言`);
+          continue;
+        }
+        
+        // 如果仍然没有找到预告片，接受任何YouTube视频
+        if (trailers.length === 0) {
+          console.log(`未找到电影ID ${movieId} 的预告片，尝试任何YouTube视频`);
+          trailers = data.results
+            .filter((video: MovieVideo) => video.site === 'YouTube')
+            .sort((a: MovieVideo, b: MovieVideo) => 
+              new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
+            );
+        }
+        
+        console.log(`电影ID ${movieId} 视频搜索结果: 找到 ${trailers.length} 个视频`);
+        return trailers;
+      } catch (err) {
+        lastError = err as Error;
+        if (attempts >= maxAttempts) {
+          console.error(`获取电影ID ${movieId} 的视频失败，已达最大重试次数:`, err);
+          throw err;
+        }
+        console.log(`获取电影ID ${movieId} 的视频失败 (尝试 ${attempts}/${maxAttempts}):`, err);
+      }
     }
     
-    const data = await response.json();
-    
-    // 筛选视频类型为预告片且来自YouTube的视频
-    const trailers = data.results
-      .filter((video: MovieVideo) => 
-        (video.type === 'Trailer' || video.type === 'Teaser') && 
-        video.site === 'YouTube'
-      )
-      // 按发布日期排序，最新的排在前面
-      .sort((a: MovieVideo, b: MovieVideo) => 
-        new Date(b.published_at).getTime() - new Date(a.published_at).getTime()
-      );
-    
-    return trailers;
+    // 如果所有重试都失败，抛出最后的错误
+    if (lastError) throw lastError;
+    throw new Error(`无法获取电影ID ${movieId} 的视频，已达最大重试次数`);
   } catch (error) {
     console.error(`获取电影ID ${movieId} 的预告片失败:`, error);
     return [];
@@ -510,48 +644,44 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       language: 'en-US',
       with_genres: filters.genres,
       with_keywords: filters.keywords,
-      sort_by: 'vote_average.desc',
-      'vote_average.gte': 7.0, // 提高默认评分阈值至7分
-      'vote_count.gte': 100, // 增加投票数阈值以确保评分可靠性
+      sort_by: 'popularity.desc', // 改为按流行度排序，提高返回率
+      'vote_average.gte': 6.0, // 降低默认评分阈值至6分，以获取更多电影
+      'vote_count.gte': 50, // 降低投票数阈值
       include_adult: false,
       with_original_language: 'en', // 默认英语电影
       'with_runtime.gte': 60, // 至少60分钟的电影
     };
     
-    // 为特定情绪添加额外的筛选条件
+    // 为特定情绪添加额外的筛选条件，但降低限制
     switch(mood) {
       case 'cheerful':
       case 'humorous':
       case 'playful':
-        // 快乐类情绪优先选择评分更高的喜剧片
+        // 快乐类情绪优先选择流行的喜剧片
         options.sort_by = 'popularity.desc';
-        options['with_runtime.lte'] = 150; // 控制时长在2.5小时内
         break;
       case 'reflective':
       case 'thoughtful':
-        // 思考类情绪优先质量而非流行度
-        options['vote_average.gte'] = 7.5; // 更高的评分要求
-        options['vote_count.gte'] = 150;
+        // 思考类情绪优先质量而非流行度，但降低门槛
+        options['vote_average.gte'] = 6.5; // 降低评分要求
+        options['vote_count.gte'] = 70; // 降低投票要求
         options.with_original_language = 'en|fr|de|es|it'; // 更多欧美电影
         break;
       case 'romantic':
       case 'passionate':
         // 感情类情绪排除恐怖和暴力类型
         options.without_genres = '27,53';
-        options.sort_by = 'vote_average.desc';
-        options['with_runtime.gte'] = 90; // 至少90分钟
+        options.sort_by = 'popularity.desc'; // 优先流行度
         break;
       case 'fearful':
       case 'tense':
         // 恐惧类情绪关注类型本身
         options.sort_by = 'popularity.desc';
-        options['with_runtime.lte'] = 120; // 控制时长在2小时内
         break;
       case 'gloomy':
       case 'melancholy':
-        // 忧郁和感伤类情绪需要情感深度高的电影
+        // 忧郁和感伤类情绪
         options.without_genres = '35,16';
-        options['with_runtime.gte'] = 100; // 偏好较长的电影
         break;
       case 'idyllic':
         // 梦幻情绪适合奇幻类电影
@@ -560,27 +690,26 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
         break;
       case 'weird':
         // 奇怪情绪需要怪诞、非主流的电影
-        options.sort_by = 'vote_count.desc';
-        options.with_original_language = 'en|fr|ja'; // 偏好这些地区的怪诞电影
+        options.sort_by = 'popularity.desc'; // 改为流行度优先
+        options.with_original_language = 'en|fr|ja|kr'; // 增加韩国电影
         break;
       case 'angry':
         // 愤怒情绪需要动作和复仇类电影
         options.with_keywords = 'revenge,justice,fight,vendetta';
         options.with_genres = '28,80,10752';
-        options['with_runtime.gte'] = 90;
         break;
       case 'lonely':
         // 孤独情绪适合成长、独处、自我发现的电影
         options.with_keywords = 'solitude,isolation,loneliness,journey,self-discovery';
-        options.sort_by = 'vote_average.desc';
+        options.sort_by = 'popularity.desc'; // 改为流行度优先
         break;
       default:
-        // 默认情况，平衡流行度和评分
+        // 默认情况，以流行度为主
         options.sort_by = 'popularity.desc';
         break;
     }
     
-    // 获取前30部电影（每页20部，获取前2页）- 减少搜索数量提高速度
+    // 获取前40部电影（每页20部，获取前2页）
     const moviePromises = [1, 2].map(page => {
       return discoverMovies({ ...options, page });
     });
@@ -591,11 +720,12 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     // 合并所有页面的结果
     let movies = movieResults.flat();
     
-    // 如果结果少于3部电影，尝试放宽条件后再次搜索
-    if (movies.length < 3) {
-      // 降低评分要求，但仍保持在7分以上
-      options['vote_average.gte'] = 7.0;
-      options['vote_count.gte'] = Math.max(20, (options['vote_count.gte'] || 100) / 2);
+    // 如果结果少于5部电影，尝试放宽条件后再次搜索
+    if (movies.length < 5) {
+      console.log(`首次搜索只找到${movies.length}部电影，放宽条件再搜索`);
+      // 降低评分要求，降到5.0
+      options['vote_average.gte'] = 5.0;
+      options['vote_count.gte'] = 20;
       
       // 如果指定了电影类型，可以尝试只保留主要类型
       if (options.with_genres && options.with_genres.includes(',')) {
@@ -606,6 +736,8 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       // 移除一些可能限制太严格的条件
       delete options['with_runtime.gte'];
       delete options['with_runtime.lte'];
+      delete options.with_keywords;
+      delete options.without_genres;
       
       // 再次获取2页数据
       const fallbackPromises = [1, 2].map(page => {
@@ -614,15 +746,17 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       
       const fallbackResults = await Promise.all(fallbackPromises);
       movies = [...movies, ...fallbackResults.flat()];
+      console.log(`放宽条件后找到${movies.length}部电影`);
     }
     
-    // 如果还是没有找到电影，尝试获取高评分流行电影
+    // 如果还是没有找到电影，尝试获取流行电影而不考虑评分
     if (movies.length === 0) {
-      console.log(`无法找到匹配心情 "${mood}" 的电影，返回高评分热门电影`);
-      // 获取2页热门高评分电影
-      const popularPromises = [1, 2].map(page => getPopularMovies(page));
+      console.log(`无法找到匹配心情 "${mood}" 的电影，返回流行电影`);
+      // 获取3页热门电影
+      const popularPromises = [1, 2, 3].map(page => getPopularMovies(page));
       const popularResults = await Promise.all(popularPromises);
-      movies = popularResults.flat().filter(movie => movie.vote_average >= 7.0);
+      movies = popularResults.flat();
+      console.log(`获取到${movies.length}部流行电影作为后备`);
     }
     
     // 去重
@@ -631,131 +765,127 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     // 为所有电影获取详细信息和视频 - 改进这部分逻辑
     console.log(`为${uniqueMovies.length}部电影获取详细信息和视频`);
     
-    // 分批处理请求，避免并发过多
-    const batchSize = 5;
+    // 更小的批次和更好的间隔处理
+    const batchSize = 5; // 增加批次大小以提高效率
     const batches = [];
+    const maxMovies = Math.min(uniqueMovies.length, 30); // 增加电影最大数量
     
-    for (let i = 0; i < Math.min(uniqueMovies.length, 20); i += batchSize) {
+    for (let i = 0; i < maxMovies; i += batchSize) {
       batches.push(uniqueMovies.slice(i, i + batchSize));
     }
     
+    console.log(`将${maxMovies}部电影分成${batches.length}批处理，每批${batchSize}部电影`);
+    
     let moviesWithDetails: Movie[] = [];
     
-    for (const batch of batches) {
-      const batchPromises = batch.map(async (movie) => {
-        try {
-          const details = await getMovieDetails(movie.id);
-          if (details) {
+    // 使用顺序处理每个批次，避免过多并发请求
+    for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+      const batch = batches[batchIndex];
+      console.log(`处理第${batchIndex + 1}/${batches.length}批电影 (${batch.length}部)`);
+      
+      // 在批次之间添加随机延迟，避免API限流
+      if (batchIndex > 0) {
+        const batchDelay = 1000 + Math.random() * 1000; // 减少等待时间
+        console.log(`批次间等待${Math.round(batchDelay)}ms...`);
+        await new Promise(resolve => setTimeout(resolve, batchDelay));
+      }
+      
+      try {
+        // 处理每个批次中的电影
+        const batchPromises = batch.map(async (movie) => {
+          try {
+            const details = await getMovieDetails(movie.id);
+            if (!details) {
+              console.log(`未能获取电影 "${movie.title}" (ID:${movie.id}) 的详情，跳过`);
+              return null;
+            }
+            
+            // 不再强制要求有视频数据，允许无视频的电影通过
+            const hasVideos = details.videos && 
+                              details.videos.results && 
+                              details.videos.results.length > 0;
+            
+            if (!hasVideos) {
+              console.log(`电影 "${details.title}" (ID:${details.id}) 没有视频数据，但仍保留`);
+            }
+            
             return {
               ...movie,
-              genres: details.genres,
-              runtime: details.runtime,
-              videos: details.videos,
+              genres: details.genres || [],
+              runtime: details.runtime || 0,
+              videos: details.videos || { results: [] }, // 确保视频对象存在
             };
+          } catch (err) {
+            console.error(`获取电影 ${movie.id} 的详细信息失败:`, err);
+            return null;
           }
-          return movie;
-        } catch (err) {
-          console.error(`获取电影 ${movie.id} 的详细信息失败:`, err);
-          return movie;
-        }
-      });
-      
-      const batchResults = await Promise.all(batchPromises);
-      moviesWithDetails = [...moviesWithDetails, ...batchResults];
-    }
-    
-    console.log(`成功获取 ${moviesWithDetails.length} 部电影的详细信息`);
-    
-    // 详细记录每部电影的视频信息，帮助调试
-    moviesWithDetails.forEach((movie, index) => {
-      const hasVideos = movie.videos && movie.videos.results && movie.videos.results.length > 0;
-      console.log(`电影[${index}] ID:${movie.id} "${movie.title}" - 有视频: ${hasVideos ? '是' : '否'}${hasVideos ? ` (${movie.videos.results.length}个)` : ''}`);
-    });
-    
-    // 过滤出有视频且评分≥7的电影
-    const filteredMovies = moviesWithDetails.filter(movie => {
-      const hasVideos = movie.videos && movie.videos.results && movie.videos.results.length > 0;
-      const hasHighRating = movie.vote_average >= 7.0;
-      return hasVideos && hasHighRating;
-    });
-    
-    console.log(`过滤后剩余 ${filteredMovies.length} 部同时满足评分≥7且有视频的电影`);
-    
-    // 如果过滤后没有电影，则放宽一些条件，至少返回有视频的电影
-    if (filteredMovies.length === 0) {
-      console.log('没有找到同时满足评分≥7且有视频的电影，返回有视频的电影');
-      const moviesWithVideos = moviesWithDetails.filter(movie => 
-        movie.videos && movie.videos.results && movie.videos.results.length > 0
-      );
-      
-      console.log(`找到 ${moviesWithVideos.length} 部有视频的电影`);
-      return moviesWithVideos.slice(0, 20);
-    }
-    
-    // 为了解决问题，添加额外检查确保所有返回的电影都有视频
-    for (let i = 0; i < filteredMovies.length; i++) {
-      const movie = filteredMovies[i];
-      if (!movie.videos || !movie.videos.results || movie.videos.results.length === 0) {
-        console.log(`警告：电影 "${movie.title}" (ID:${movie.id}) 没有视频，尝试重新获取`);
+        });
         
-        try {
-          // 最后尝试再次获取视频
-          const videos = await getMovieVideos(movie.id);
-          if (videos && videos.length > 0) {
-            movie.videos = { results: videos };
-            console.log(`成功为电影 "${movie.title}" 获取到 ${videos.length} 个视频`);
-          } else {
-            console.log(`无法为电影 "${movie.title}" 获取视频，将从结果中移除`);
-            filteredMovies.splice(i, 1);
-            i--; // 调整索引
-          }
-        } catch (err) {
-          console.error(`重新获取电影 "${movie.title}" 的视频失败:`, err);
-          filteredMovies.splice(i, 1);
-          i--; // 调整索引
+        const batchResults = await Promise.all(batchPromises);
+        // 过滤掉null结果并添加到总结果中
+        const validResults = batchResults.filter(movie => movie !== null) as Movie[];
+        moviesWithDetails = [...moviesWithDetails, ...validResults];
+        
+        console.log(`第${batchIndex + 1}批处理完成: ${validResults.length}/${batch.length}部电影成功获取详情`);
+        
+        // 如果已经获取到足够的电影，提前结束循环
+        if (moviesWithDetails.length >= 10) {
+          console.log(`已获取${moviesWithDetails.length}部电影，数量足够，停止处理剩余批次`);
+          break;
         }
+      } catch (batchError) {
+        console.error(`处理第${batchIndex + 1}批电影时出错:`, batchError);
+        // 继续处理下一批，而不是完全失败
       }
     }
     
-    console.log(`最终返回 ${filteredMovies.length} 部电影`);
-    return filteredMovies.slice(0, 20);
+    console.log(`成功获取${moviesWithDetails.length}/${maxMovies}部电影的详细信息`);
+    
+    if (moviesWithDetails.length === 0) {
+      console.error('没有成功获取任何电影的详细信息，尝试放宽条件再次搜索');
+      // 直接返回至少有基本信息的电影，而不是空数组
+      return uniqueMovies.slice(0, 10).map(movie => ({
+        ...movie,
+        videos: { results: [] }
+      }));
+    }
+    
+    // 优先返回有视频的电影，但允许无视频的电影作为后备
+    const moviesWithVideos = moviesWithDetails.filter(movie => 
+      movie.videos && movie.videos.results && movie.videos.results.length > 0 &&
+      movie.videos.results.some(video => video.site === 'YouTube')
+    );
+    
+    console.log(`筛选后有${moviesWithVideos.length}部电影包含视频`);
+    
+    // 如果有视频的电影足够多，就只返回这些
+    if (moviesWithVideos.length >= 5) {
+      console.log(`返回${Math.min(moviesWithVideos.length, 20)}部有视频的电影`);
+      return moviesWithVideos.slice(0, 20);
+    }
+    
+    // 否则，混合返回一些有视频的电影和没有视频的电影
+    const result = [
+      ...moviesWithVideos,
+      ...moviesWithDetails.filter(movie => 
+        !movie.videos || !movie.videos.results || movie.videos.results.length === 0 ||
+        !movie.videos.results.some(video => video.site === 'YouTube')
+      )
+    ].slice(0, 20);
+    
+    console.log(`混合返回${result.length}部电影，其中${moviesWithVideos.length}部有视频`);
+    return result;
   } catch (error) {
     console.error(`根据心情"${mood}"发现电影失败:`, error);
     // 出错时返回热门电影作为后备
     try {
-      const popularPromises = [1, 2].map(page => getPopularMovies(page));
+      const popularPromises = [1, 2, 3].map(page => getPopularMovies(page));
       const popularResults = await Promise.all(popularPromises);
       const movies = popularResults.flat();
       
-      // 只获取前10部电影的详细信息和视频
-      const detailedMoviesPromises = movies.slice(0, 10).map(async (movie) => {
-        try {
-          const details = await getMovieDetails(movie.id);
-          if (details) {
-            return {
-              ...movie,
-              genres: details.genres,
-              runtime: details.runtime,
-              videos: details.videos,
-            };
-          }
-          return movie;
-        } catch (err) {
-          console.error(`获取电影 ${movie.id} 的详细信息失败:`, err);
-          return movie;
-        }
-      });
-      
-      const moviesWithDetails = await Promise.all(detailedMoviesPromises);
-      
-      // 过滤出有视频且评分≥7的电影
-      const filteredMovies = moviesWithDetails.filter(movie => {
-        const hasVideos = movie.videos && movie.videos.results && movie.videos.results.length > 0;
-        const hasHighRating = movie.vote_average >= 7.0;
-        return hasVideos && hasHighRating;
-      });
-      
-      return filteredMovies;
+      // 不强制要求有视频，返回热门电影
+      console.log(`通过热门电影后备获取到${movies.length}部电影`);
+      return movies.slice(0, 20);
     } catch (backupError) {
       console.error('获取后备电影失败:', backupError);
       return [];
