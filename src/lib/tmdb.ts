@@ -465,8 +465,8 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       with_genres: filters.genres,
       with_keywords: filters.keywords,
       sort_by: 'vote_average.desc',
-      'vote_average.gte': 6.0,
-      'vote_count.gte': 50,
+      'vote_average.gte': 7.0, // 提高默认评分阈值至7分
+      'vote_count.gte': 100, // 增加投票数阈值以确保评分可靠性
       include_adult: false,
       with_original_language: 'en', // 默认英语电影
       'with_runtime.gte': 60, // 至少60分钟的电影
@@ -478,15 +478,14 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       case 'humorous':
       case 'playful':
         // 快乐类情绪优先选择评分更高的喜剧片
-        options['vote_average.gte'] = 6.5;
         options.sort_by = 'popularity.desc';
         options['with_runtime.lte'] = 150; // 控制时长在2.5小时内
         break;
       case 'reflective':
       case 'thoughtful':
         // 思考类情绪优先质量而非流行度
-        options['vote_average.gte'] = 7.0;
-        options['vote_count.gte'] = 100;
+        options['vote_average.gte'] = 7.5; // 更高的评分要求
+        options['vote_count.gte'] = 150;
         options.with_original_language = 'en|fr|de|es|it'; // 更多欧美电影
         break;
       case 'romantic':
@@ -499,26 +498,22 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       case 'fearful':
       case 'tense':
         // 恐惧类情绪关注类型本身
-        options['vote_average.gte'] = 5.5;
         options.sort_by = 'popularity.desc';
         options['with_runtime.lte'] = 120; // 控制时长在2小时内
         break;
       case 'gloomy':
       case 'melancholy':
         // 忧郁和感伤类情绪需要情感深度高的电影
-        options['vote_average.gte'] = 6.5;
         options.without_genres = '35,16';
         options['with_runtime.gte'] = 100; // 偏好较长的电影
         break;
       case 'idyllic':
         // 梦幻情绪适合奇幻类电影
         options.with_genres = '14,10751,16';
-        options['vote_average.gte'] = 6.0;
         options.sort_by = 'popularity.desc';
         break;
       case 'weird':
         // 奇怪情绪需要怪诞、非主流的电影
-        options['vote_average.gte'] = 5.0;
         options.sort_by = 'vote_count.desc';
         options.with_original_language = 'en|fr|ja'; // 偏好这些地区的怪诞电影
         break;
@@ -531,7 +526,6 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       case 'lonely':
         // 孤独情绪适合成长、独处、自我发现的电影
         options.with_keywords = 'solitude,isolation,loneliness,journey,self-discovery';
-        options['vote_average.gte'] = 6.5;
         options.sort_by = 'vote_average.desc';
         break;
       default:
@@ -540,8 +534,8 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
         break;
     }
     
-    // 获取前50部电影（每页20部，获取前3页）
-    const moviePromises = [1, 2, 3].map(page => {
+    // 获取前30部电影（每页20部，获取前2页）- 减少搜索数量提高速度
+    const moviePromises = [1, 2].map(page => {
       return discoverMovies({ ...options, page });
     });
     
@@ -553,9 +547,9 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     
     // 如果结果少于3部电影，尝试放宽条件后再次搜索
     if (movies.length < 3) {
-      // 降低评分要求
-      options['vote_average.gte'] = Math.max(5.0, (options['vote_average.gte'] || 6.0) - 1.0);
-      options['vote_count.gte'] = Math.max(20, (options['vote_count.gte'] || 50) / 2);
+      // 降低评分要求，但仍保持在7分以上
+      options['vote_average.gte'] = 7.0;
+      options['vote_count.gte'] = Math.max(20, (options['vote_count.gte'] || 100) / 2);
       
       // 如果指定了电影类型，可以尝试只保留主要类型
       if (options.with_genres && options.with_genres.includes(',')) {
@@ -567,8 +561,8 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       delete options['with_runtime.gte'];
       delete options['with_runtime.lte'];
       
-      // 再次获取3页数据
-      const fallbackPromises = [1, 2, 3].map(page => {
+      // 再次获取2页数据
+      const fallbackPromises = [1, 2].map(page => {
         return discoverMovies({ ...options, page });
       });
       
@@ -576,22 +570,65 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
       movies = [...movies, ...fallbackResults.flat()];
     }
     
-    // 如果还是没有找到电影，尝试获取流行电影
+    // 如果还是没有找到电影，尝试获取高评分流行电影
     if (movies.length === 0) {
-      console.log(`无法找到匹配心情 "${mood}" 的电影，返回热门电影`);
-      // 获取3页热门电影
-      const popularPromises = [1, 2, 3].map(page => getPopularMovies(page));
+      console.log(`无法找到匹配心情 "${mood}" 的电影，返回高评分热门电影`);
+      // 获取2页热门高评分电影
+      const popularPromises = [1, 2].map(page => getPopularMovies(page));
       const popularResults = await Promise.all(popularPromises);
-      movies = popularResults.flat();
+      movies = popularResults.flat().filter(movie => movie.vote_average >= 7.0);
     }
     
-    // 去重并限制返回数量
+    // 去重
     const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
-    const top20Movies = uniqueMovies.slice(0, 20);
     
-    // 为前8部电影获取详细信息，包括视频
-    const moviesWithDetails = await Promise.all(
-      top20Movies.slice(0, 8).map(async (movie) => {
+    // 为所有电影获取详细信息和视频
+    const detailedMoviesPromises = uniqueMovies.slice(0, 20).map(async (movie) => {
+      try {
+        const details = await getMovieDetails(movie.id);
+        if (details) {
+          return {
+            ...movie,
+            genres: details.genres,
+            runtime: details.runtime,
+            videos: details.videos,
+          };
+        }
+        return movie;
+      } catch (err) {
+        console.error(`获取电影 ${movie.id} 的详细信息失败:`, err);
+        return movie;
+      }
+    });
+    
+    const moviesWithDetails = await Promise.all(detailedMoviesPromises);
+    
+    // 过滤出有视频且评分≥7的电影
+    const filteredMovies = moviesWithDetails.filter(movie => {
+      const hasVideos = movie.videos && movie.videos.results && movie.videos.results.length > 0;
+      const hasHighRating = movie.vote_average >= 7.0;
+      return hasVideos && hasHighRating;
+    });
+    
+    // 如果过滤后没有电影，则放宽一些条件，至少返回有视频的电影
+    if (filteredMovies.length === 0) {
+      console.log('没有找到同时满足评分≥7且有视频的电影，返回有视频的电影');
+      return moviesWithDetails.filter(movie => 
+        movie.videos && movie.videos.results && movie.videos.results.length > 0
+      ).slice(0, 20);
+    }
+    
+    return filteredMovies.slice(0, 20);
+  } catch (error) {
+    console.error(`根据心情"${mood}"发现电影失败:`, error);
+    // 出错时返回热门电影作为后备
+    try {
+      const popularPromises = [1, 2].map(page => getPopularMovies(page));
+      const popularResults = await Promise.all(popularPromises);
+      const movies = popularResults.flat();
+      
+      // 只获取前10部电影的详细信息和视频
+      const detailedMoviesPromises = movies.slice(0, 10).map(async (movie) => {
         try {
           const details = await getMovieDetails(movie.id);
           if (details) {
@@ -607,18 +644,21 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
           console.error(`获取电影 ${movie.id} 的详细信息失败:`, err);
           return movie;
         }
-      })
-    );
-    
-    // 组合两个数组: 前8部带详情的电影 + 剩余的电影
-    return [...moviesWithDetails, ...top20Movies.slice(8)];
-  } catch (error) {
-    console.error(`根据心情"${mood}"发现电影失败:`, error);
-    // 出错时返回热门电影作为后备
-    const popularPromises = [1, 2, 3].map(page => getPopularMovies(page));
-    const popularResults = await Promise.all(popularPromises);
-    const movies = popularResults.flat();
-    const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
-    return uniqueMovies.slice(0, 20);
+      });
+      
+      const moviesWithDetails = await Promise.all(detailedMoviesPromises);
+      
+      // 过滤出有视频且评分≥7的电影
+      const filteredMovies = moviesWithDetails.filter(movie => {
+        const hasVideos = movie.videos && movie.videos.results && movie.videos.results.length > 0;
+        const hasHighRating = movie.vote_average >= 7.0;
+        return hasVideos && hasHighRating;
+      });
+      
+      return filteredMovies;
+    } catch (backupError) {
+      console.error('获取后备电影失败:', backupError);
+      return [];
+    }
   }
 } 

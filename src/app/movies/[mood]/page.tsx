@@ -148,7 +148,7 @@ export default function MoviePage() {
     async function fetchMovies() {
       try {
         setLoading(true);
-        // 使用tmdb.ts中的方法获取电影
+        // 使用优化后的tmdb.ts中的方法获取电影（仅返回评分7+且有视频的电影）
         const data = await discoverMoviesByMood(mood);
         console.log('获取到的电影数据:', data); // 调试日志
         
@@ -255,6 +255,7 @@ export default function MoviePage() {
         <div className="text-center">
           <div className="inline-block h-8 w-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin mb-4"></div>
           <p className="text-sm">LOADING SIMULATIONS...</p>
+          <p className="text-xs mt-2">搜索高评分（7+）且有视频预告的电影中...</p>
         </div>
       </div>
     );
@@ -265,7 +266,7 @@ export default function MoviePage() {
       <div className="h-screen bg-black text-green-500 flex items-center justify-center">
         <div className="max-w-md text-center border border-green-500/30 p-4">
           <p className="text-red-500 mb-2">SYSTEM ERROR</p>
-          <p className="text-sm mb-4">{error || 'No movies found'}</p>
+          <p className="text-sm mb-4">{error || 'No movies found with rating 7+ and video trailers'}</p>
           <button 
             onClick={() => router.push('/')}
             className="text-xs border border-green-500 px-3 py-1 hover:bg-green-900/20"
@@ -284,6 +285,8 @@ export default function MoviePage() {
           <div className="mb-6">
             <p className="text-xs mb-2">&gt; DECRYPTING EMOTIONAL PATTERN: {moodInfo.name}</p>
             <p className="text-xs mb-2">&gt; RUNNING ALGORITHM: <span className="text-green-300">CINEMA_MATCH.exe</span></p>
+            <p className="text-xs mb-2">&gt; FILTERING: <span className="text-green-300">RATING ≥ 7.0</span></p>
+            <p className="text-xs mb-2">&gt; REQUIRING: <span className="text-green-300">VIDEO TRAILERS</span></p>
             <p className="text-xs">&gt; RENDERING SIMULATION OUTPUT...</p>
           </div>
           
@@ -374,6 +377,10 @@ export default function MoviePage() {
                 {moodInfo.name} 
                 <span className={`text-xs ml-1 ${viewMode === 'matrix' ? 'text-green-700' : 'text-blue-700'}`}>{moodInfo.code}</span>
               </span>
+            </div>
+            
+            <div className={`text-xs px-2 py-1 ${viewMode === 'matrix' ? 'bg-green-900/20 border border-green-500/30' : 'bg-blue-900/20 border border-blue-500/30'}`}>
+              ⭐ 7.0+
             </div>
             
             {/* 红/蓝药丸切换按钮 */}
@@ -554,7 +561,9 @@ export default function MoviePage() {
                 
                 <div className={`flex items-center flex-wrap gap-4 mb-4 ${viewMode === 'matrix' ? 'text-green-600' : 'text-gray-300'}`}>
                   <span>{currentMovie.release_date ? new Date(currentMovie.release_date).getFullYear() : 'N/A'}</span>
-                  <span>⭐ {currentMovie.vote_average?.toFixed(1) || 'N/A'}/10</span>
+                  <span className={`font-bold ${(currentMovie.vote_average && currentMovie.vote_average >= 8) ? (viewMode === 'matrix' ? 'text-green-400' : 'text-blue-300') : ''}`}>
+                    ⭐ {currentMovie.vote_average?.toFixed(1) || 'N/A'}/10
+                  </span>
                   {currentMovie.runtime && <span>{currentMovie.runtime} min</span>}
                 </div>
 
