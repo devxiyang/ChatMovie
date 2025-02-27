@@ -152,6 +152,12 @@ export default function MoviePage() {
         const data = await discoverMoviesByMood(mood);
         console.log('获取到的电影数据:', data); // 调试日志
         
+        // 添加调试信息
+        if (data.length > 0) {
+          console.log(`共获取 ${data.length} 部电影`);
+          console.log(`第一部电影 "${data[0].title}" 的视频信息:`, data[0].videos);
+        }
+        
         // 处理电影数据，确保所有必要的字段都存在
         const processedMovies = data.map(movie => {
           // 处理海报路径，确保它是完整的URL
@@ -166,6 +172,15 @@ export default function MoviePage() {
             poster_path
           };
         });
+        
+        // 添加对视频的检查
+        const moviesWithVideos = processedMovies.filter(movie => 
+          movie.videos && movie.videos.results && movie.videos.results.length > 0
+        );
+        
+        if (moviesWithVideos.length < processedMovies.length) {
+          console.warn(`警告: ${processedMovies.length - moviesWithVideos.length} 部电影没有视频信息`);
+        }
         
         setMovies(processedMovies);
         setError(null);
@@ -229,8 +244,11 @@ export default function MoviePage() {
   // 修复获取预告片逻辑
   const getTrailer = () => {
     if (!currentMovie?.videos?.results) {
+      console.log(`当前电影 "${currentMovie?.title}" 没有视频信息`);
       return null;
     }
+    
+    console.log(`当前电影 "${currentMovie.title}" 有 ${currentMovie.videos.results.length} 个视频`);
     
     // 首先尝试寻找类型为'Trailer'的YouTube视频
     let trailer = currentMovie.videos.results.find(
@@ -239,9 +257,16 @@ export default function MoviePage() {
     
     // 如果没有找到，尝试任何YouTube视频
     if (!trailer) {
+      console.log(`没有找到类型为'Trailer'的YouTube视频，尝试任何YouTube视频`);
       trailer = currentMovie.videos.results.find(
         video => video.site === 'YouTube'
       );
+    }
+    
+    if (trailer) {
+      console.log(`找到视频: ${trailer.type} - ${trailer.key}`);
+    } else {
+      console.log(`没有找到合适的视频`);
     }
     
     return trailer;
@@ -510,6 +535,13 @@ export default function MoviePage() {
                         target.src = '/placeholder.png';
                       }}
                     />
+                    
+                    {/* 视频状态信息 */}
+                    {showVideo && !trailer && (
+                      <div className="absolute top-0 left-0 right-0 bg-black/80 text-xs p-1 text-green-500">
+                        {currentMovie.videos?.results?.length ? `有${currentMovie.videos.results.length}个视频但无可用预告片` : '无视频数据'}
+                      </div>
+                    )}
                     
                     {/* 墨镜反射效果 */}
                     <div className={`absolute top-1/2 left-0 right-0 h-[1px] ${
