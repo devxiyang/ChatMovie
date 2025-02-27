@@ -148,8 +148,26 @@ export default function MoviePage() {
     async function fetchMovies() {
       try {
         setLoading(true);
+        // 使用tmdb.ts中的方法获取电影
         const data = await discoverMoviesByMood(mood);
-        setMovies(data);
+        console.log('获取到的电影数据:', data); // 调试日志
+        
+        // 处理电影数据，确保所有必要的字段都存在
+        const processedMovies = data.map(movie => {
+          // 处理海报路径，确保它是完整的URL
+          const poster_path = movie.poster_path?.startsWith('http') 
+            ? movie.poster_path 
+            : movie.poster_path 
+              ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
+              : '/placeholder.png';
+              
+          return {
+            ...movie,
+            poster_path
+          };
+        });
+        
+        setMovies(processedMovies);
         setError(null);
         setLoading(false);
         
@@ -208,6 +226,29 @@ export default function MoviePage() {
 
   const moodInfo = moodToMatrix[mood] || { name: 'UNKNOWN', code: '000000' };
 
+  // 修复获取预告片逻辑
+  const getTrailer = () => {
+    if (!currentMovie?.videos?.results) {
+      return null;
+    }
+    
+    // 首先尝试寻找类型为'Trailer'的YouTube视频
+    let trailer = currentMovie.videos.results.find(
+      video => video.site === 'YouTube' && video.type === 'Trailer'
+    );
+    
+    // 如果没有找到，尝试任何YouTube视频
+    if (!trailer) {
+      trailer = currentMovie.videos.results.find(
+        video => video.site === 'YouTube'
+      );
+    }
+    
+    return trailer;
+  };
+
+  const trailer = getTrailer();
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-green-500 flex items-center justify-center">
@@ -235,10 +276,6 @@ export default function MoviePage() {
       </div>
     );
   }
-
-  const trailer = currentMovie.videos?.results.find(
-    video => video.site === 'YouTube' && video.type === 'Trailer'
-  );
 
   if (decoding) {
     return (
@@ -470,7 +507,7 @@ export default function MoviePage() {
 
           {showVideo && trailer ? (
             <iframe
-              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=1&mute=1`}
+              src={`https://www.youtube.com/embed/${trailer.key}?autoplay=0&mute=1`}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               className="absolute inset-0 w-full h-full"
@@ -478,7 +515,7 @@ export default function MoviePage() {
           ) : (
             <div className="relative w-full h-full overflow-hidden">
               <Image
-                src={`https://image.tmdb.org/t/p/original${currentMovie.poster_path}`}
+                src={currentMovie.poster_path || '/placeholder.png'}
                 alt={currentMovie.title}
                 fill
                 className={`object-cover ${viewMode === 'matrix' ? 'matrix-filter' : ''}`}

@@ -230,6 +230,29 @@ export async function getMoviesByMood(mood: string): Promise<Movie[]> {
   }
 }
 
+// 获取电影详情和预告片
+export async function getMovieDetails(movieId: number): Promise<any> {
+  try {
+    const response = await fetch(
+      `${TMDB_BASE_URL}/movie/${movieId}?append_to_response=videos&language=en-US`, {
+        headers: {
+          'Authorization': `Bearer ${TMDB_API_KEY}`,
+          'accept': 'application/json'
+        }
+      }
+    );
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error(`获取电影ID ${movieId} 的详情失败:`, error);
+    return null;
+  }
+}
+
 // 获取电影预告片
 export async function getMovieVideos(movieId: number): Promise<MovieVideo[]> {
   try {
@@ -564,7 +587,31 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     
     // 去重并限制返回数量
     const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
-    return uniqueMovies.slice(0, 50); // 返回前50部电影
+    const top20Movies = uniqueMovies.slice(0, 20);
+    
+    // 为前8部电影获取详细信息，包括视频
+    const moviesWithDetails = await Promise.all(
+      top20Movies.slice(0, 8).map(async (movie) => {
+        try {
+          const details = await getMovieDetails(movie.id);
+          if (details) {
+            return {
+              ...movie,
+              genres: details.genres,
+              runtime: details.runtime,
+              videos: details.videos,
+            };
+          }
+          return movie;
+        } catch (err) {
+          console.error(`获取电影 ${movie.id} 的详细信息失败:`, err);
+          return movie;
+        }
+      })
+    );
+    
+    // 组合两个数组: 前8部带详情的电影 + 剩余的电影
+    return [...moviesWithDetails, ...top20Movies.slice(8)];
   } catch (error) {
     console.error(`根据心情"${mood}"发现电影失败:`, error);
     // 出错时返回热门电影作为后备
@@ -572,6 +619,6 @@ export async function discoverMoviesByMood(mood: string): Promise<Movie[]> {
     const popularResults = await Promise.all(popularPromises);
     const movies = popularResults.flat();
     const uniqueMovies = Array.from(new Map(movies.map(movie => [movie.id, movie])).values());
-    return uniqueMovies.slice(0, 50);
+    return uniqueMovies.slice(0, 20);
   }
 } 
