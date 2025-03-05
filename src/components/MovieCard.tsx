@@ -9,7 +9,7 @@ interface MovieCardProps {
 
 export default function MovieCard({ movie, showDetails = true }: MovieCardProps) {
   return (
-    <div className="movie-card-animation overflow-hidden rounded-lg bg-white dark:bg-card shadow-md">
+    <div className="overflow-hidden rounded-lg shadow-md transition-shadow hover:shadow-xl h-full">
       <div className="relative aspect-[2/3] w-full overflow-hidden">
         {movie.poster_url ? (
           <Image
@@ -18,42 +18,39 @@ export default function MovieCard({ movie, showDetails = true }: MovieCardProps)
             className="object-cover"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            priority
           />
         ) : (
-          <div className="h-full w-full bg-muted flex items-center justify-center text-muted-foreground p-4">
-            <span className="text-center">{movie.title}</span>
+          <div className="h-full w-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center p-4">
+            <span className="text-center font-medium">{movie.title}</span>
           </div>
         )}
         
-        {/* 渐变遮罩和标题 */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100">
-          <div className="absolute bottom-2 left-2 right-2">
-            <h3 className="text-white font-medium line-clamp-2 text-sm">{movie.title}</h3>
-            {movie.release_date && (
-              <p className="text-white/70 text-xs mt-1">
-                {movie.release_date.split('-')[0]}
-              </p>
-            )}
-          </div>
+        {/* 评分标签 */}
+        <div className="absolute top-2 right-2 bg-primary/90 rounded-full h-8 w-8 flex items-center justify-center text-white font-bold text-xs shadow-md">
+          {movie.score_percent}%
         </div>
         
-        {/* 评分标签 */}
-        <div className="absolute top-2 right-2 bg-primary/90 rounded-full h-8 w-8 flex items-center justify-center text-white font-bold text-xs shadow-lg">
-          {movie.score_percent}%
+        {/* 电影标题 - 在底部显示 */}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 to-transparent py-3 px-3">
+          <h3 className="text-white font-medium line-clamp-2 text-sm">
+            {movie.title} 
+            <span className="text-white/70 ml-1">
+              ({movie.release_date.split('-')[0]})
+            </span>
+          </h3>
         </div>
       </div>
       
-      {/* 详情区域（可选） */}
+      {/* 简化的详情区域，与mood2movie一致 */}
       {showDetails && (
-        <div className="p-3">
-          <div className="flex justify-between items-center mt-1">
-            <div className="flex flex-wrap gap-1 mt-1">
-              {movie.genres.slice(0, 1).map(genre => (
-                <span key={genre.id} className="text-xs px-2 py-0.5 bg-muted rounded-full">
-                  {genre.name}
-                </span>
-              ))}
-            </div>
+        <div className="p-2">
+          <div className="flex flex-wrap gap-1">
+            {movie.genres.slice(0, 2).map(genre => (
+              <span key={genre.id} className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+                {genre.name}
+              </span>
+            ))}
           </div>
         </div>
       )}

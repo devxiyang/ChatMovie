@@ -37,7 +37,7 @@ export default function MoodSelector() {
     
     // 延迟一点以显示加载状态
     setTimeout(() => {
-      const movies = getMoviesByMood(mood, 12);
+      const movies = getMoviesByMood(mood, 8);
       setRecommendedMovies(movies);
       setIsLoading(false);
       
@@ -69,22 +69,22 @@ export default function MoodSelector() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       {/* 心情选择区 */}
-      <div className={`transition-all duration-500 ${selectedMood && recommendedMovies.length > 0 ? 'scale-95 opacity-90' : ''}`}>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4 md:gap-6">
+      <div className="mood-selector-container">
+        <div className="grid grid-cols-3 md:grid-cols-3 gap-8 justify-center">
           {moodOptions.map((option) => (
             <button
               key={option.mood}
               onClick={() => handleMoodSelect(option.mood)}
-              className={`flex flex-col items-center justify-center p-5 rounded-xl transition-all duration-200 
+              className={`flex flex-col items-center justify-center p-6 md:p-8 rounded-2xl transition-all duration-200 hover:transform hover:shadow-lg
                 ${selectedMood === option.mood 
-                  ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
-                  : 'bg-card hover:bg-primary/10 hover:scale-105'}
+                  ? 'bg-primary text-primary-foreground scale-105 shadow-xl' 
+                  : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}
               `}
             >
-              <span className="text-5xl mb-3">{option.emoji}</span>
-              <span className="font-medium">{option.label}</span>
+              <span className="text-6xl md:text-7xl mb-4">{option.emoji}</span>
+              <span className="font-medium text-lg">{option.label}</span>
             </button>
           ))}
         </div>
@@ -93,7 +93,9 @@ export default function MoodSelector() {
       {/* 加载状态 */}
       {isLoading && (
         <div className="flex justify-center my-16">
-          <div className="animate-bounce-slow text-4xl">🎬</div>
+          <div className="loading-bar w-64 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-full bg-primary"></div>
+          </div>
         </div>
       )}
 
@@ -105,22 +107,22 @@ export default function MoodSelector() {
               <span className="text-3xl mr-2">
                 {moodOptions.find(m => m.mood === selectedMood)?.emoji}
               </span>
-              <span>适合{moodOptions.find(m => m.mood === selectedMood)?.label}心情的电影</span>
+              <span>推荐电影</span>
             </h2>
             <button 
               onClick={resetSelection}
-              className="text-sm px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
+              className="text-sm px-4 py-2 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
             >
               重新选择
             </button>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8">
             {recommendedMovies.map(movie => (
               <div 
                 key={movie.id} 
                 onClick={() => handleMovieSelect(movie)}
-                className="cursor-pointer"
+                className="cursor-pointer transform transition-transform hover:scale-105"
               >
                 <MovieCard movie={movie} showDetails={false} />
               </div>
