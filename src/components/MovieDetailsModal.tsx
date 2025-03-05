@@ -92,10 +92,10 @@ export default function MovieDetailsModal({ movie, isOpen, onClose }: MovieDetai
                 <div className="flex flex-wrap gap-3 mb-6">
                   {movie.cast.slice(0, 6).map(person => (
                     <div key={person.id} className="flex items-center gap-2">
-                      {person.profile_path && (
+                      {person.profile_url && (
                         <div className="relative h-8 w-8 rounded-full overflow-hidden">
                           <Image
-                            src={person.profile_path}
+                            src={person.profile_url}
                             alt={person.name}
                             className="object-cover"
                             fill
@@ -113,10 +113,10 @@ export default function MovieDetailsModal({ movie, isOpen, onClose }: MovieDetai
                 <div className="flex flex-wrap gap-3 mb-6">
                   {movie.directors.map(director => (
                     <div key={director.id} className="flex items-center gap-2">
-                      {director.profile_path && (
+                      {director.profile_url && (
                         <div className="relative h-8 w-8 rounded-full overflow-hidden">
                           <Image
-                            src={director.profile_path}
+                            src={director.profile_url}
                             alt={director.name}
                             className="object-cover"
                             fill

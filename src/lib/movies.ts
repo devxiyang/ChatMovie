@@ -29,8 +29,51 @@ const moodGenres: Record<Mood, string[]> = {
 
 // 自定义类型定义，避免TypeScript错误
 interface MovieDataObject {
-  movies: Movie[];
+  movies: any[]; // 使用any类型以适应原始数据格式
   [key: string]: any;
+}
+
+// TMDB图片基础URL
+const TMDB_IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/';
+const POSTER_SIZE = 'w500';
+const BACKDROP_SIZE = 'original';
+const PROFILE_SIZE = 'w185';  // 添加演员图片尺寸
+
+// 转换TMDB图片路径为完整URL
+function getImageUrl(path: string | null, size: string): string | null {
+  if (!path) return null;
+  return `${TMDB_IMAGE_BASE_URL}${size}${path}`;
+}
+
+// 处理电影数据，添加完整URL
+function processMovieData(movie: any): Movie {
+  return {
+    ...movie,
+    poster_url: getImageUrl(movie.poster_path, POSTER_SIZE),
+    backdrop_url: getImageUrl(movie.backdrop_path, BACKDROP_SIZE),
+    // 确保其他必要字段
+    id: movie.id,
+    title: movie.title,
+    overview: movie.overview || '',
+    release_date: movie.release_date || '',
+    genres: movie.genres || [],
+    vote_average: movie.vote_average || 0,
+    vote_count: movie.vote_count || 0,
+    score_percent: movie.score_percent || Math.round((movie.vote_average || 0) * 10),
+    // 处理演员数据，为每个演员添加完整的图片URL
+    cast: (movie.cast || []).map((person: any) => ({
+      ...person,
+      profile_url: getImageUrl(person.profile_path, PROFILE_SIZE)
+    })),
+    // 处理导演数据，为每个导演添加完整的图片URL
+    directors: (movie.directors || []).map((director: any) => ({
+      ...director,
+      profile_url: getImageUrl(director.profile_path, PROFILE_SIZE)
+    })),
+    era: movie.era || (movie.release_date ? movie.release_date.split('-')[0] + '年代' : '未知'),
+    keywords: movie.keywords || [],
+    trailer_url: movie.trailer_url || null
+  };
 }
 
 // 加载所有电影数据
@@ -39,9 +82,9 @@ export function getAllMovies(): Movie[] {
     // 将movieData视为自定义类型
     const data = movieData as MovieDataObject;
     
-    // 直接返回movies数组
+    // 直接返回movies数组，并处理每个电影对象
     if (data.movies && Array.isArray(data.movies)) {
-      return data.movies;
+      return data.movies.map(processMovieData);
     }
     
     // 兜底错误处理

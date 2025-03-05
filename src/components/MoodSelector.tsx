@@ -10,19 +10,18 @@ interface MoodOption {
   mood: Mood;
   emoji: string;
   label: string;
-  color: string;
 }
 
 const moodOptions: MoodOption[] = [
-  { mood: 'happy', emoji: '😊', label: '开心', color: 'bg-yellow-100 hover:bg-yellow-200' },
-  { mood: 'sad', emoji: '😢', label: '伤感', color: 'bg-blue-100 hover:bg-blue-200' },
-  { mood: 'excited', emoji: '🤩', label: '兴奋', color: 'bg-pink-100 hover:bg-pink-200' },
-  { mood: 'relaxed', emoji: '😌', label: '放松', color: 'bg-green-100 hover:bg-green-200' },
-  { mood: 'romantic', emoji: '💖', label: '浪漫', color: 'bg-red-100 hover:bg-red-200' },
-  { mood: 'thoughtful', emoji: '🤔', label: '深思', color: 'bg-purple-100 hover:bg-purple-200' },
-  { mood: 'nostalgic', emoji: '🕰️', label: '怀旧', color: 'bg-amber-100 hover:bg-amber-200' },
-  { mood: 'adventurous', emoji: '🚀', label: '冒险', color: 'bg-cyan-100 hover:bg-cyan-200' },
-  { mood: 'inspired', emoji: '✨', label: '受鼓舞', color: 'bg-indigo-100 hover:bg-indigo-200' },
+  { mood: 'happy', emoji: '😊', label: '开心' },
+  { mood: 'sad', emoji: '😢', label: '伤感' },
+  { mood: 'excited', emoji: '🤩', label: '兴奋' },
+  { mood: 'relaxed', emoji: '😌', label: '放松' },
+  { mood: 'romantic', emoji: '💖', label: '浪漫' },
+  { mood: 'thoughtful', emoji: '🤔', label: '深思' },
+  { mood: 'nostalgic', emoji: '🕰️', label: '怀旧' },
+  { mood: 'adventurous', emoji: '🚀', label: '冒险' },
+  { mood: 'inspired', emoji: '✨', label: '受鼓舞' },
 ];
 
 export default function MoodSelector() {
@@ -30,21 +29,26 @@ export default function MoodSelector() {
   const [recommendedMovies, setRecommendedMovies] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleMoodSelect = (mood: Mood) => {
+    setIsLoading(true);
     setSelectedMood(mood);
-    const movies = getMoviesByMood(mood, 12);
-    setRecommendedMovies(movies);
     
-    // 平滑滚动到推荐区域
-    if (movies.length > 0) {
-      setTimeout(() => {
+    // 延迟一点以显示加载状态
+    setTimeout(() => {
+      const movies = getMoviesByMood(mood, 12);
+      setRecommendedMovies(movies);
+      setIsLoading(false);
+      
+      // 平滑滚动到推荐区域
+      if (movies.length > 0) {
         document.getElementById('recommendations')?.scrollIntoView({ 
           behavior: 'smooth',
-          block: 'start'
+          block: 'start' 
         });
-      }, 100);
-    }
+      }
+    }, 400);
   };
 
   const handleMovieSelect = (movie: Movie) => {
@@ -65,15 +69,19 @@ export default function MoodSelector() {
   };
 
   return (
-    <div>
+    <div className="max-w-5xl mx-auto">
       {/* 心情选择区 */}
-      <div className={`transition-all duration-500 ${selectedMood ? 'scale-90 opacity-80' : ''}`}>
-        <div className="grid grid-cols-3 md:grid-cols-5 gap-4 max-w-3xl mx-auto">
+      <div className={`transition-all duration-500 ${selectedMood && recommendedMovies.length > 0 ? 'scale-95 opacity-90' : ''}`}>
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-4 md:gap-6">
           {moodOptions.map((option) => (
             <button
               key={option.mood}
               onClick={() => handleMoodSelect(option.mood)}
-              className={`flex flex-col items-center justify-center p-6 rounded-xl transition-transform duration-200 hover:scale-110 cursor-pointer ${option.color}`}
+              className={`flex flex-col items-center justify-center p-5 rounded-xl transition-all duration-200 
+                ${selectedMood === option.mood 
+                  ? 'bg-primary text-primary-foreground shadow-lg scale-105' 
+                  : 'bg-card hover:bg-primary/10 hover:scale-105'}
+              `}
             >
               <span className="text-5xl mb-3">{option.emoji}</span>
               <span className="font-medium">{option.label}</span>
@@ -82,19 +90,26 @@ export default function MoodSelector() {
         </div>
       </div>
 
+      {/* 加载状态 */}
+      {isLoading && (
+        <div className="flex justify-center my-16">
+          <div className="animate-bounce-slow text-4xl">🎬</div>
+        </div>
+      )}
+
       {/* 推荐电影区 */}
-      {selectedMood && recommendedMovies.length > 0 && (
-        <section id="recommendations" className="mt-20 mb-10 animate-fade-in">
+      {selectedMood && recommendedMovies.length > 0 && !isLoading && (
+        <section id="recommendations" className="mt-16 mb-10 animate-fade-in">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-2xl font-semibold flex items-center">
               <span className="text-3xl mr-2">
                 {moodOptions.find(m => m.mood === selectedMood)?.emoji}
               </span>
-              {moodOptions.find(m => m.mood === selectedMood)?.label}电影推荐
+              <span>适合{moodOptions.find(m => m.mood === selectedMood)?.label}心情的电影</span>
             </h2>
             <button 
               onClick={resetSelection}
-              className="text-sm px-3 py-1 rounded bg-muted hover:bg-muted/80 transition-colors"
+              className="text-sm px-4 py-2 rounded-full bg-muted hover:bg-muted/80 transition-colors"
             >
               重新选择
             </button>
@@ -105,9 +120,9 @@ export default function MoodSelector() {
               <div 
                 key={movie.id} 
                 onClick={() => handleMovieSelect(movie)}
-                className="cursor-pointer transition-transform duration-200 hover:scale-105"
+                className="cursor-pointer"
               >
-                <MovieCard movie={movie} />
+                <MovieCard movie={movie} showDetails={false} />
               </div>
             ))}
           </div>

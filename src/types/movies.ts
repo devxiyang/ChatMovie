@@ -15,11 +15,13 @@ export interface Movie {
     name: string;
     character: string;
     profile_path: string | null;
+    profile_url: string | null;
   }[];
   directors: {
     id: number;
     name: string;
     profile_path: string | null;
+    profile_url: string | null;
   }[];
   era: string;
   keywords: { id: number; name: string }[];

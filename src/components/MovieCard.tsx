@@ -15,32 +15,40 @@ export default function MovieCard({ movie, showDetails = true }: MovieCardProps)
           <Image
             src={movie.poster_url}
             alt={movie.title}
-            className="object-cover transition-transform duration-500 hover:scale-110"
+            className="object-cover"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
         ) : (
           <div className="h-full w-full bg-muted flex items-center justify-center text-muted-foreground p-4">
-            {movie.title}
+            <span className="text-center">{movie.title}</span>
           </div>
         )}
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-transparent to-black/70 opacity-0 hover:opacity-100 transition-opacity duration-300">
-          <div className="absolute bottom-3 left-3 right-3">
-            <p className="text-white font-medium line-clamp-2">{movie.title}</p>
+        
+        {/* 渐变遮罩和标题 */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-100">
+          <div className="absolute bottom-2 left-2 right-2">
+            <h3 className="text-white font-medium line-clamp-2 text-sm">{movie.title}</h3>
+            {movie.release_date && (
+              <p className="text-white/70 text-xs mt-1">
+                {movie.release_date.split('-')[0]}
+              </p>
+            )}
           </div>
         </div>
-        <div className="absolute top-2 right-2 bg-primary/90 rounded-full h-10 w-10 flex items-center justify-center text-white font-bold text-sm shadow-lg">
+        
+        {/* 评分标签 */}
+        <div className="absolute top-2 right-2 bg-primary/90 rounded-full h-8 w-8 flex items-center justify-center text-white font-bold text-xs shadow-lg">
           {movie.score_percent}%
         </div>
       </div>
       
+      {/* 详情区域（可选） */}
       {showDetails && (
         <div className="p-3">
-          <h3 className="font-semibold text-sm line-clamp-1 mb-1">{movie.title}</h3>
-          <div className="flex justify-between items-center">
-            <p className="text-xs text-muted-foreground">{movie.release_date.split('-')[0]}</p>
-            <div className="flex space-x-1">
-              {movie.genres.slice(0, 2).map(genre => (
+          <div className="flex justify-between items-center mt-1">
+            <div className="flex flex-wrap gap-1 mt-1">
+              {movie.genres.slice(0, 1).map(genre => (
                 <span key={genre.id} className="text-xs px-2 py-0.5 bg-muted rounded-full">
                   {genre.name}
                 </span>
