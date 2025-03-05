@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Movie } from '@/types/movies';
 import { getMoviesByMood } from '@/lib/movies';
@@ -21,6 +21,15 @@ export default function MovieDetailsModal({
   onPrevious
 }: MovieDetailsModalProps) {
   const [showTrailer, setShowTrailer] = useState(false);
+  const [filmTransition, setFilmTransition] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      // 显示胶片切换效果
+      setFilmTransition(true);
+      setTimeout(() => setFilmTransition(false), 300);
+    }
+  }, [isOpen, movie]);
 
   if (!isOpen) return null;
 
@@ -33,9 +42,41 @@ export default function MovieDetailsModal({
   // 格式化评分
   const rating = movie.vote_average ? `${Math.round(movie.vote_average * 10) / 10}/10` : '';
 
+  const handleNavigation = (direction: 'prev' | 'next') => {
+    setFilmTransition(true);
+    setTimeout(() => {
+      if (direction === 'prev' && onPrevious) {
+        onPrevious();
+      } else if (direction === 'next' && onNext) {
+        onNext();
+      }
+      setTimeout(() => setFilmTransition(false), 100);
+    }, 300);
+  };
+
+  const handleClose = () => {
+    setFilmTransition(true);
+    setTimeout(() => {
+      onClose();
+    }, 300);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+      <div className="movie-grain"></div>
+      
+      {/* 胶片切换效果 */}
+      <div className={`film-transition ${filmTransition ? 'active' : ''}`}></div>
+      
       <div className="bg-neutral-900 rounded-lg overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col modal-animation">
+        {/* 胶片边框装饰 */}
+        <div className="absolute inset-0 border-[3px] border-black z-10 pointer-events-none rounded-lg"></div>
+        <div className="absolute left-1 top-10 bottom-10 w-[6px] bg-black flex flex-col gap-8 justify-center z-10 pointer-events-none">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="w-full h-[12px] bg-[#0c0c0c] border border-[#1e1e1e] rounded-[1px]"></div>
+          ))}
+        </div>
+        
         {/* 电影预告片区域 */}
         <div className="relative w-full">
           {showTrailer && movie.trailer_url ? (
@@ -63,6 +104,18 @@ export default function MovieDetailsModal({
                 </div>
               )}
               
+              {/* 电影胶片穿孔装饰 */}
+              <div className="absolute top-0 left-0 right-0 h-6 bg-black flex items-center justify-center gap-12 overflow-hidden z-20">
+                {[...Array(20)].map((_, i) => (
+                  <div key={i} className="w-4 h-2 bg-[#1a1a1a] rounded-[1px]"></div>
+                ))}
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 h-6 bg-black flex items-center justify-center gap-12 overflow-hidden z-20">
+                {[...Array(20)].map((_, i) => (
+                  <div key={i} className="w-4 h-2 bg-[#1a1a1a] rounded-[1px]"></div>
+                ))}
+              </div>
+              
               {/* 播放按钮覆盖层 */}
               {movie.trailer_url && !showTrailer && (
                 <div 
@@ -81,15 +134,15 @@ export default function MovieDetailsModal({
         </div>
         
         {/* 电影信息区域 */}
-        <div className="p-6">
-          <h2 className="text-2xl font-bold mb-2">{movie.title}</h2>
+        <div className="p-6 bg-gradient-to-b from-neutral-900 to-black pl-10">
+          <h2 className="text-2xl font-bold mb-2 text-white">{movie.title}</h2>
           
           <div className="flex items-center gap-2 mb-4 text-gray-300">
             <span>{releaseYear}</span>
             <span>•</span>
             <span>{runtime}</span>
             <span>•</span>
-            <span className="font-medium">{rating}</span>
+            <span className="font-medium text-white">{rating}</span>
           </div>
           
           {/* 流派标签 */}
@@ -106,15 +159,25 @@ export default function MovieDetailsModal({
           
           {/* 导航按钮 */}
           <div className="flex items-center justify-between mt-4">
-            <button onClick={onPrevious} className="nav-button">
+            <button 
+              onClick={() => handleNavigation('prev')} 
+              className="nav-button"
+              disabled={!onPrevious}
+              style={{ opacity: !onPrevious ? 0.5 : 1 }}
+            >
               <span>↩ BACK</span>
             </button>
             
-            <button onClick={onClose} className="nav-button bg-red-700 hover:bg-red-600">
+            <button onClick={handleClose} className="nav-button bg-red-700 hover:bg-red-600">
               <span>HIDE</span>
             </button>
             
-            <button onClick={onNext} className="nav-button">
+            <button 
+              onClick={() => handleNavigation('next')} 
+              className="nav-button"
+              disabled={!onNext}
+              style={{ opacity: !onNext ? 0.5 : 1 }}
+            >
               <span>NEXT ↪</span>
             </button>
           </div>
