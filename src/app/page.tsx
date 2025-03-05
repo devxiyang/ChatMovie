@@ -1,12 +1,25 @@
 import React from 'react';
 import MoodSelector from '@/components/MoodSelector';
+import Image from 'next/image';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col">
       {/* 页面头部 */}
-      <header className="py-4 px-6 flex justify-center items-center">
-        <h1 className="text-3xl font-bold">Mood2Movie</h1>
+      <header className="py-4 px-6 flex justify-between items-center border-b">
+        <div className="flex items-center gap-2">
+          <Image
+            src="/popcorn.png"
+            alt="Popcorn"
+            width={32}
+            height={32}
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="px-4 py-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition-colors">
+            😊 EDIT MOOD
+          </button>
+        </div>
       </header>
       
       {/* 主要内容区 */}
