@@ -4,25 +4,25 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 240 10% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 240 10% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 240 5.9% 10%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 85% 60%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    --destructive: 0 84.2% 60.2%;
+    --secondary: 0 0% 13%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 13%;
+    --muted-foreground: 0 0% 65%;
+    --accent: 0 0% 13%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 60% 50%;
     --destructive-foreground: 0 0% 98%;
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 0 0% 20%;
+    --input: 0 0% 20%;
+    --ring: 0 85% 60%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
@@ -70,8 +70,9 @@
   
   body {
     @apply bg-neutral-900 text-gray-100;
-    color: rgb(var(--foreground-rgb));
-    background: rgb(var(--background-rgb));
+    color-scheme: dark;
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(17, 17, 17, 1) 100%);
+    min-height: 100vh;
   }
 }
 
@@ -119,39 +120,44 @@
   position: relative;
   overflow: hidden;
   border-radius: 4px;
+  background-color: rgba(255, 255, 255, 0.1);
 }
 
 .loading-bar div {
-  position: absolute;
+  background: linear-gradient(90deg, rgba(255, 59, 48, 0.7) 0%, rgba(255, 59, 48, 1) 50%, rgba(255, 59, 48, 0.7) 100%);
   height: 100%;
-  background: linear-gradient(to right, transparent, hsl(var(--primary)), transparent);
-  animation: loading 1.5s ease-in-out infinite;
+  width: 50%;
+  animation: loading 1.5s infinite;
+  border-radius: 4px;
 }
 
 @keyframes loading {
-  0% { width: 0; left: 0; }
-  50% { width: 50%; left: 25%; }
-  100% { width: 0; left: 100%; }
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+  100% { transform: translateX(300%); }
 }
 
 /* 强化情绪选择器样式 */
 .mood-selector-container button {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  background-color: rgba(30, 30, 30, 0.8);
   transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mood-selector-container button:hover {
+  background-color: rgba(40, 40, 40, 0.9);
   transform: translateY(-5px);
-  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* 简化的过渡动画 */
 .animate-fade-in {
-  animation: fadeIn 0.5s ease-in-out;
+  animation: fadeIn 0.5s ease-out forwards;
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -242,7 +248,14 @@ button:hover,
 }
 
 .modal-animation {
-  animation: scaleIn 0.3s ease-out forwards;
+  animation: modalFadeIn 0.3s ease-out forwards;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 电影详情页样式 */
@@ -251,6 +264,8 @@ button:hover,
   padding-bottom: 56.25%; /* 16:9 纵横比 */
   height: 0;
   overflow: hidden;
+  border-radius: 8px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
 }
 
 .video-container iframe {
@@ -259,20 +274,68 @@ button:hover,
   left: 0;
   width: 100%;
   height: 100%;
+  border: none;
 }
 
 .genre-pill {
-  @apply px-4 py-1 bg-red-500 text-white rounded-full text-sm;
+  @apply px-4 py-1 bg-red-600 text-white rounded-full text-sm;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
 .nav-button {
-  @apply px-4 py-2 bg-gray-800 text-white rounded-lg flex items-center gap-2 hover:bg-gray-700 transition-colors;
+  @apply px-4 py-2 bg-neutral-800 text-white rounded-lg flex items-center gap-2 hover:bg-neutral-700 transition-colors;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .trailer-overlay {
   @apply absolute inset-0 flex items-center justify-center bg-black/60;
+  backdrop-filter: blur(2px);
 }
 
 .trailer-play-button {
   @apply w-16 h-16 bg-red-600 rounded-full flex items-center justify-center text-white;
+  box-shadow: 0 0 25px rgba(255, 59, 48, 0.5);
+  transition: all 0.3s ease;
+}
+
+.trailer-play-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 35px rgba(255, 59, 48, 0.7);
+}
+
+/* 红色按钮效果 */
+.red-button {
+  @apply bg-red-600 text-white rounded-full transition-all;
+  box-shadow: 0 4px 12px rgba(255, 59, 48, 0.3);
+}
+
+.red-button:hover {
+  @apply bg-red-700;
+  box-shadow: 0 6px 16px rgba(255, 59, 48, 0.4);
+}
+
+/* 电影氛围元素 */
+.movie-grain {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  width: 100vw;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 100;
+}
+
+/* 电影卡片动效 */
+.movie-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.movie-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 59, 48, 0.3);
 }
