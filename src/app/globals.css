@@ -115,13 +115,43 @@
 
 /* 加载动画效果 */
 .loading-bar {
-  animation: loading 3s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+  border-radius: 4px;
+}
+
+.loading-bar div {
+  position: absolute;
+  height: 100%;
+  background: linear-gradient(to right, transparent, hsl(var(--primary)), transparent);
+  animation: loading 1.5s ease-in-out infinite;
 }
 
 @keyframes loading {
-  0% { width: 0; }
-  50% { width: 100%; }
-  100% { width: 0; }
+  0% { width: 0; left: 0; }
+  50% { width: 50%; left: 25%; }
+  100% { width: 0; left: 100%; }
+}
+
+/* 强化情绪选择器样式 */
+.mood-selector-container button {
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.mood-selector-container button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* 简化的过渡动画 */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* 添加渐变背景 */
@@ -185,21 +215,6 @@ button:hover,
 }
 
 /* 自定义动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out forwards;
-}
-
 @keyframes bounce {
   0%, 100% {
     transform: translateY(0);
