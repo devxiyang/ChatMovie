@@ -1,0 +1,1125 @@
+{
+  "count": 10,
+  "last_processed": 9,
+  "movies": [
+    {
+      "id": 278,
+      "title": "The Shawshank Redemption",
+      "original_title": "The Shawshank Redemption",
+      "overview": "Imprisoned in the 1940s for the double murder of his wife and her lover, upstanding banker Andy Dufresne begins a new life at the Shawshank prison, where he puts his accounting skills to work for an amoral warden. During his long stretch in prison, Dufresne comes to be admired by the other inmates -- including an older prisoner named Red -- for his integrity and unquenchable sense of hope.",
+      "release_date": "1994-09-23",
+      "release_year": "1994",
+      "poster_url": "https://image.tmdb.org/t/p/w500/9cqNxx0GxF0bflZmeSMuL5tnGzr.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/zfbjgQE1uSd9wiPTX4VzsLi0rGG.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=PLl99DlL6b4",
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        }
+      ],
+      "vote_average": 8.7,
+      "vote_count": 27814,
+      "score_percent": 87,
+      "cast": [
+        {
+          "id": 192,
+          "name": "Morgan Freeman",
+          "character": "Ellis Boyd 'Red' Redding"
+        },
+        {
+          "id": 504,
+          "name": "Tim Robbins",
+          "character": "Andy Dufresne"
+        },
+        {
+          "id": 4029,
+          "name": "Bob Gunton",
+          "character": "Warden Norton"
+        },
+        {
+          "id": 6573,
+          "name": "William Sadler",
+          "character": "Heywood"
+        },
+        {
+          "id": 6574,
+          "name": "Clancy Brown",
+          "character": "Captain Byron T. Hadley"
+        }
+      ],
+      "directors": [
+        {
+          "id": 4027,
+          "name": "Frank Darabont"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 378,
+          "name": "prison"
+        },
+        {
+          "id": 6054,
+          "name": "friendship"
+        },
+        {
+          "id": 796,
+          "name": "police brutality"
+        },
+        {
+          "id": 417,
+          "name": "corruption"
+        },
+        {
+          "id": 818,
+          "name": "based on novel or book"
+        },
+        {
+          "id": 6089,
+          "name": "freedom"
+        },
+        {
+          "id": 3929,
+          "name": "hope"
+        },
+        {
+          "id": 2885,
+          "name": "prison cell"
+        },
+        {
+          "id": 4779,
+          "name": "delinquent"
+        },
+        {
+          "id": 11436,
+          "name": "redemption"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Frank Darabont's *The Shawshank Redemption* transcends its prison drama setting, evolving into a timeless allegory of hope, perseverance, and the indomitable human spirit. While the crime narrative is compelling, it's the film's profoundly moving depiction of male friendship, embodied by Tim Robbins and Morgan Freeman's nuanced performances, that truly resonates. Its cultural impact stems from its optimistic message, reminding audiences of the importance of inner freedom even amidst external constraints. Ultimately, *Shawshank* offers a powerful testament to the enduring strength found in resilience and the unwavering belief in a brighter future, solidifying its place as a cinematic masterpiece.",
+      "mood_tags": [
+        "Hopeful",
+        "Inspiring",
+        "Somber",
+        "Tense",
+        "Redemption"
+      ],
+      "watch_suggestion": "Watch \"The Shawshank Redemption\" on a quiet evening when you're seeking a thought-provoking and ultimately hopeful story about resilience and friendship, recommended for viewers who appreciate character-driven dramas."
+    },
+    {
+      "id": 238,
+      "title": "The Godfather",
+      "original_title": "The Godfather",
+      "overview": "Spanning the years 1945 to 1955, a chronicle of the fictional Italian-American Corleone crime family. When organized crime family patriarch, Vito Corleone barely survives an attempt on his life, his youngest son, Michael steps in to take care of the would-be killers, launching a campaign of bloody revenge.",
+      "release_date": "1972-03-14",
+      "release_year": "1972",
+      "poster_url": "https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/rSPw7tgCH9c6NqICZef4kZjFOQ5.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=Ew9ngL1GZvs",
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        }
+      ],
+      "vote_average": 8.689,
+      "vote_count": 21113,
+      "score_percent": 87,
+      "cast": [
+        {
+          "id": 3084,
+          "name": "Marlon Brando",
+          "character": "Don Vito Corleone"
+        },
+        {
+          "id": 1158,
+          "name": "Al Pacino",
+          "character": "Michael Corleone"
+        },
+        {
+          "id": 3085,
+          "name": "James Caan",
+          "character": "Sonny Corleone"
+        },
+        {
+          "id": 3087,
+          "name": "Robert Duvall",
+          "character": "Tom Hagen"
+        },
+        {
+          "id": 3086,
+          "name": "Richard S. Castellano",
+          "character": "Clemenza"
+        }
+      ],
+      "directors": [
+        {
+          "id": 1776,
+          "name": "Francis Ford Coppola"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 818,
+          "name": "based on novel or book"
+        },
+        {
+          "id": 697,
+          "name": "loss of loved one"
+        },
+        {
+          "id": 699,
+          "name": "love at first sight"
+        },
+        {
+          "id": 131,
+          "name": "italy"
+        },
+        {
+          "id": 1715,
+          "name": "symbolism"
+        },
+        {
+          "id": 4677,
+          "name": "patriarch"
+        },
+        {
+          "id": 1295,
+          "name": "europe"
+        },
+        {
+          "id": 10291,
+          "name": "organized crime"
+        },
+        {
+          "id": 10391,
+          "name": "mafia"
+        },
+        {
+          "id": 11001,
+          "name": "religion"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Francis Ford Coppola's *The Godfather* transcends mere genre, achieving operatic grandeur in its depiction of the Corleone family's rise and fall. Beyond its gripping narrative of power and betrayal, the film’s masterful cinematography, nuanced performances (particularly Brando's iconic Don), and Nino Rota's haunting score have indelibly shaped cinematic language. *The Godfather* redefined the gangster film, imbuing it with Shakespearean weight, and its exploration of family, loyalty, and the corrupting influence of power continues to resonate, solidifying its place as a cultural touchstone and a masterpiece of American cinema.",
+      "mood_tags": [
+        "Grim",
+        "intense",
+        "suspenseful",
+        "tragic",
+        "powerful"
+      ],
+      "watch_suggestion": "Mature viewers with an appreciation for classic, character-driven crime dramas should watch The Godfather to experience a cinematic masterpiece."
+    },
+    {
+      "id": 424,
+      "title": "Schindler's List",
+      "original_title": "Schindler's List",
+      "overview": "The true story of how businessman Oskar Schindler saved over a thousand Jewish lives from the Nazis while they worked as slaves in his factory during World War II.",
+      "release_date": "1993-12-15",
+      "release_year": "1993",
+      "poster_url": "https://image.tmdb.org/t/p/w500/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/zb6fM1CX41D9rF9hdgclu0peUmy.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=mxphAlJID9U",
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 36,
+          "name": "History"
+        },
+        {
+          "id": 10752,
+          "name": "War"
+        }
+      ],
+      "vote_average": 8.567,
+      "vote_count": 16190,
+      "score_percent": 86,
+      "cast": [
+        {
+          "id": 3896,
+          "name": "Liam Neeson",
+          "character": "Oskar Schindler"
+        },
+        {
+          "id": 2282,
+          "name": "Ben Kingsley",
+          "character": "Itzhak Stern"
+        },
+        {
+          "id": 5469,
+          "name": "Ralph Fiennes",
+          "character": "Amon Goeth"
+        },
+        {
+          "id": 6692,
+          "name": "Caroline Goodall",
+          "character": "Emilie Schindler"
+        },
+        {
+          "id": 6693,
+          "name": "Jonathan Sagall",
+          "character": "Poldek Pfefferberg"
+        }
+      ],
+      "directors": [
+        {
+          "id": 488,
+          "name": "Steven Spielberg"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 1382,
+          "name": "factory"
+        },
+        {
+          "id": 1701,
+          "name": "hero"
+        },
+        {
+          "id": 2652,
+          "name": "nazi"
+        },
+        {
+          "id": 1631,
+          "name": "concentration camp"
+        },
+        {
+          "id": 1799,
+          "name": "ss (nazi schutzstaffel)"
+        },
+        {
+          "id": 1739,
+          "name": "holocaust (shoah)"
+        },
+        {
+          "id": 1956,
+          "name": "world war ii"
+        },
+        {
+          "id": 2394,
+          "name": "ghetto"
+        },
+        {
+          "id": 2433,
+          "name": "jew persecution"
+        },
+        {
+          "id": 2446,
+          "name": "kraków, poland"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Spielberg's \"Schindler's List\" is more than just a historical drama; it's a harrowing and deeply moving testament to the resilience of the human spirit amidst unimaginable horror. Filmed in stark black and white, the film achieves a visceral immediacy, highlighting the stark contrast between Schindler's opportunistic beginnings and his eventual moral awakening. Liam Neeson delivers a career-defining performance, supported by equally powerful turns from Fiennes and Kingsley. Beyond its artistic merit, \"Schindler's List\" cemented the Holocaust's place in popular consciousness, forcing audiences to confront its barbarity and the enduring power of individual action. It's a cinematic landmark, both devastating and ultimately, profoundly hopeful.",
+      "mood_tags": [
+        "Harrowing",
+        "tragic",
+        "somber",
+        "powerful",
+        "historical"
+      ],
+      "watch_suggestion": "Schindler's List should be watched by mature, thoughtful viewers interested in historical dramas about the Holocaust and the power of individual action in the face of unimaginable evil."
+    },
+    {
+      "id": 240,
+      "title": "The Godfather Part II",
+      "original_title": "The Godfather Part II",
+      "overview": "In the continuing saga of the Corleone crime family, a young Vito Corleone grows up in Sicily and in 1910s New York. In the 1950s, Michael Corleone attempts to expand the family business into Las Vegas, Hollywood and Cuba.",
+      "release_date": "1974-12-20",
+      "release_year": "1974",
+      "poster_url": "https://image.tmdb.org/t/p/w500/hek3koDUyRQk7FIhPXsa6mT2Zc3.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/kGzFbGhp99zva6oZODW5atUtnqi.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=7pfqivkYUlE",
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        }
+      ],
+      "vote_average": 8.57,
+      "vote_count": 12745,
+      "score_percent": 86,
+      "cast": [
+        {
+          "id": 1158,
+          "name": "Al Pacino",
+          "character": "Don Michael Corleone"
+        },
+        {
+          "id": 3087,
+          "name": "Robert Duvall",
+          "character": "Tom Hagen"
+        },
+        {
+          "id": 3092,
+          "name": "Diane Keaton",
+          "character": "Kay Corleone"
+        },
+        {
+          "id": 380,
+          "name": "Robert De Niro",
+          "character": "Vito Corleone"
+        },
+        {
+          "id": 3096,
+          "name": "John Cazale",
+          "character": "Frederico 'Fredo' Corleone"
+        }
+      ],
+      "directors": [
+        {
+          "id": 1776,
+          "name": "Francis Ford Coppola"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 613,
+          "name": "new year's eve"
+        },
+        {
+          "id": 242,
+          "name": "new york city"
+        },
+        {
+          "id": 818,
+          "name": "based on novel or book"
+        },
+        {
+          "id": 700,
+          "name": "italian american"
+        },
+        {
+          "id": 701,
+          "name": "cuba"
+        },
+        {
+          "id": 131,
+          "name": "italy"
+        },
+        {
+          "id": 3149,
+          "name": "gangster"
+        },
+        {
+          "id": 6049,
+          "name": "praise"
+        },
+        {
+          "id": 1936,
+          "name": "blackmail"
+        },
+        {
+          "id": 1715,
+          "name": "symbolism"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Coppola's *The Godfather Part II* transcends mere sequeldom, becoming a profound meditation on power, legacy, and the corrupting influence of the American Dream. Seamlessly interweaving Michael's modern struggle with Vito's immigrant origin story, the film offers a chilling duality. Pacino's icy portrayal of Michael’s descent into moral abyss is masterful, while De Niro’s youthful Vito is equally captivating. Its stark depiction of ambition's devastating cost cemented its place as a cinematic landmark, influencing countless crime dramas and solidifying its exploration of family and tradition within the American narrative. A brutal, beautiful, and enduring masterpiece.",
+      "mood_tags": [
+        "Epic",
+        "tragic",
+        "intense",
+        "gritty",
+        "powerful"
+      ],
+      "watch_suggestion": "Film enthusiasts and anyone appreciating complex character studies should watch \"The Godfather Part II\" for its masterful storytelling and exploration of power, legacy, and morality."
+    },
+    {
+      "id": 157336,
+      "title": "Interstellar",
+      "original_title": "Interstellar",
+      "overview": "The adventures of a group of explorers who make use of a newly discovered wormhole to surpass the limitations on human space travel and conquer the vast distances involved in an interstellar voyage.",
+      "release_date": "2014-11-05",
+      "release_year": "2014",
+      "poster_url": "https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/8sNiAPPYU14PUepFNeSNGUTiHW.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=LY19rHKAaAg",
+      "genres": [
+        {
+          "id": 12,
+          "name": "Adventure"
+        },
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 878,
+          "name": "Science Fiction"
+        }
+      ],
+      "vote_average": 8.5,
+      "vote_count": 36633,
+      "score_percent": 85,
+      "cast": [
+        {
+          "id": 10297,
+          "name": "Matthew McConaughey",
+          "character": "Cooper"
+        },
+        {
+          "id": 1813,
+          "name": "Anne Hathaway",
+          "character": "Brand"
+        },
+        {
+          "id": 3895,
+          "name": "Michael Caine",
+          "character": "Professor Brand"
+        },
+        {
+          "id": 83002,
+          "name": "Jessica Chastain",
+          "character": "Murph"
+        },
+        {
+          "id": 1893,
+          "name": "Casey Affleck",
+          "character": "Tom"
+        }
+      ],
+      "directors": [
+        {
+          "id": 525,
+          "name": "Christopher Nolan"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 10084,
+          "name": "rescue"
+        },
+        {
+          "id": 2964,
+          "name": "future"
+        },
+        {
+          "id": 1612,
+          "name": "spacecraft"
+        },
+        {
+          "id": 4776,
+          "name": "race against time"
+        },
+        {
+          "id": 310,
+          "name": "artificial intelligence (a.i.)"
+        },
+        {
+          "id": 1432,
+          "name": "nasa"
+        },
+        {
+          "id": 1521,
+          "name": "time warp"
+        },
+        {
+          "id": 4565,
+          "name": "dystopia"
+        },
+        {
+          "id": 1963,
+          "name": "expedition"
+        },
+        {
+          "id": 3801,
+          "name": "space travel"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Nolan's *Interstellar* is a visually stunning and intellectually ambitious epic that grapples with humanity's future against the backdrop of existential threat. While its scientific accuracy is debated, the film's exploration of love, sacrifice, and the power of human connection across vast distances resonates deeply. McConaughey delivers a poignant performance, anchoring the film's complex themes. Its cultural impact lies in sparking widespread discourse on astrophysics and humanity's place in the cosmos, solidifying Nolan's status as a visionary filmmaker despite occasionally muddled plot points. Zimmer's score is another standout element, amplifying the film's emotional weight and grandeur.",
+      "mood_tags": [
+        "Epic",
+        "Hopeful",
+        "Thought-provoking",
+        "Melancholy",
+        "Awe-inspiring"
+      ],
+      "watch_suggestion": "Interstellar should be watched by science fiction enthusiasts and those who appreciate thought-provoking dramas with stunning visuals, ideally on a large screen for maximum impact."
+    },
+    {
+      "id": 155,
+      "title": "The Dark Knight",
+      "original_title": "The Dark Knight",
+      "overview": "Batman raises the stakes in his war on crime. With the help of Lt. Jim Gordon and District Attorney Harvey Dent, Batman sets out to dismantle the remaining criminal organizations that plague the streets. The partnership proves to be effective, but they soon find themselves prey to a reign of chaos unleashed by a rising criminal mastermind known to the terrified citizens of Gotham as the Joker.",
+      "release_date": "2008-07-16",
+      "release_year": "2008",
+      "poster_url": "https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/oOv2oUXcAaNXakRqUPxYq5lJURz.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=_PZpmTj1Q8Q",
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 28,
+          "name": "Action"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        },
+        {
+          "id": 53,
+          "name": "Thriller"
+        }
+      ],
+      "vote_average": 8.519,
+      "vote_count": 33492,
+      "score_percent": 85,
+      "cast": [
+        {
+          "id": 3894,
+          "name": "Christian Bale",
+          "character": "Bruce Wayne"
+        },
+        {
+          "id": 1810,
+          "name": "Heath Ledger",
+          "character": "Joker"
+        },
+        {
+          "id": 6383,
+          "name": "Aaron Eckhart",
+          "character": "Harvey Dent"
+        },
+        {
+          "id": 3895,
+          "name": "Michael Caine",
+          "character": "Alfred"
+        },
+        {
+          "id": 1579,
+          "name": "Maggie Gyllenhaal",
+          "character": "Rachel"
+        }
+      ],
+      "directors": [
+        {
+          "id": 525,
+          "name": "Christopher Nolan"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 9537,
+          "name": "joker"
+        },
+        {
+          "id": 4426,
+          "name": "sadism"
+        },
+        {
+          "id": 4630,
+          "name": "chaos"
+        },
+        {
+          "id": 1308,
+          "name": "secret identity"
+        },
+        {
+          "id": 853,
+          "name": "crime fighter"
+        },
+        {
+          "id": 9715,
+          "name": "superhero"
+        },
+        {
+          "id": 2095,
+          "name": "anti hero"
+        },
+        {
+          "id": 3151,
+          "name": "scarecrow"
+        },
+        {
+          "id": 9717,
+          "name": "based on comic"
+        },
+        {
+          "id": 7002,
+          "name": "vigilante"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Christopher Nolan's *The Dark Knight* transcends typical superhero fare, becoming a chillingly relevant crime drama. Heath Ledger's Oscar-winning Joker is a force of pure, nihilistic anarchy, a villain for the ages. Nolan masterfully crafts a morally complex narrative exploring themes of chaos versus order, heroism, and the corrupting nature of power. Its gritty realism, coupled with Hans Zimmer's pulse-pounding score, creates a palpable sense of dread. Beyond entertainment, *The Dark Knight* left an indelible mark on cinema, raising the bar for superhero movies and sparking enduring cultural conversations about societal anxieties and the boundaries of justice.",
+      "mood_tags": [
+        "dark",
+        "intense",
+        "suspenseful",
+        "chaotic",
+        "thrilling"
+      ],
+      "watch_suggestion": "The Dark Knight should be watched by mature audiences who enjoy thought-provoking action thrillers with complex characters and themes, ideally when they have time to fully immerse themselves in its intense narrative."
+    },
+    {
+      "id": 680,
+      "title": "Pulp Fiction",
+      "original_title": "Pulp Fiction",
+      "overview": "A burger-loving hit man, his philosophical partner, a drug-addled gangster's moll and a washed-up boxer converge in this sprawling, comedic crime caper. Their adventures unfurl in three stories that ingeniously trip back and forth in time.",
+      "release_date": "1994-09-10",
+      "release_year": "1994",
+      "poster_url": "https://image.tmdb.org/t/p/w500/jYqKxBbAUdfKq3BfHKivJytFiPL.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/suaEOtk1N1sgg2MTM7oZd2cfVp3.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=tGpTpVyI_OQ",
+      "genres": [
+        {
+          "id": 53,
+          "name": "Thriller"
+        },
+        {
+          "id": 80,
+          "name": "Crime"
+        }
+      ],
+      "vote_average": 8.5,
+      "vote_count": 28386,
+      "score_percent": 85,
+      "cast": [
+        {
+          "id": 8891,
+          "name": "John Travolta",
+          "character": "Vincent Vega"
+        },
+        {
+          "id": 2231,
+          "name": "Samuel L. Jackson",
+          "character": "Jules Winnfield"
+        },
+        {
+          "id": 139,
+          "name": "Uma Thurman",
+          "character": "Mia Wallace"
+        },
+        {
+          "id": 62,
+          "name": "Bruce Willis",
+          "character": "Butch Coolidge"
+        },
+        {
+          "id": 10182,
+          "name": "Ving Rhames",
+          "character": "Marsellus Wallace"
+        }
+      ],
+      "directors": [
+        {
+          "id": 138,
+          "name": "Quentin Tarantino"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 2231,
+          "name": "drug dealer"
+        },
+        {
+          "id": 2792,
+          "name": "boxer"
+        },
+        {
+          "id": 4076,
+          "name": "massage"
+        },
+        {
+          "id": 8627,
+          "name": "stolen money"
+        },
+        {
+          "id": 11435,
+          "name": "briefcase"
+        },
+        {
+          "id": 9730,
+          "name": "crime boss"
+        },
+        {
+          "id": 11436,
+          "name": "redemption"
+        },
+        {
+          "id": 11442,
+          "name": "heirloom"
+        },
+        {
+          "id": 10104,
+          "name": "dance competition"
+        },
+        {
+          "id": 12670,
+          "name": "los angeles, california"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Tarantino's *Pulp Fiction* isn't just a film; it's a cultural earthquake. A dazzlingly self-aware tapestry of crime, violence, and pop-culture obsession, it rewrote the rules of cinematic storytelling with its non-linear narrative and unforgettable dialogue. Its impact resonates even decades later, influencing everything from indie filmmaking to meme culture. While some may find its violence gratuitous, *Pulp Fiction* remains a landmark achievement, a darkly comedic and stylish masterpiece that redefined the thriller genre and cemented Tarantino's status as a cinematic visionary.",
+      "mood_tags": [
+        "Violent",
+        "quirky",
+        "suspenseful",
+        "dark humor",
+        "stylish"
+      ],
+      "watch_suggestion": "Pulp Fiction should be watched by mature viewers who appreciate darkly comedic crime thrillers with non-linear storytelling, preferably late at night."
+    },
+    {
+      "id": 13,
+      "title": "Forrest Gump",
+      "original_title": "Forrest Gump",
+      "overview": "A man with a low IQ has accomplished great things in his life and been present during significant historic events—in each case, far exceeding what anyone imagined he could do. But despite all he has achieved, his one true love eludes him.",
+      "release_date": "1994-06-23",
+      "release_year": "1994",
+      "poster_url": "https://image.tmdb.org/t/p/w500/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/mzfx54nfDPTUXZOG48u4LaEheDy.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=m-btyJIYLyI",
+      "genres": [
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 10749,
+          "name": "Romance"
+        }
+      ],
+      "vote_average": 8.5,
+      "vote_count": 27904,
+      "score_percent": 85,
+      "cast": [
+        {
+          "id": 31,
+          "name": "Tom Hanks",
+          "character": "Forrest Gump"
+        },
+        {
+          "id": 32,
+          "name": "Robin Wright",
+          "character": "Jenny Curran"
+        },
+        {
+          "id": 33,
+          "name": "Gary Sinise",
+          "character": "Lieutenant Dan Taylor"
+        },
+        {
+          "id": 35,
+          "name": "Sally Field",
+          "character": "Mrs. Gump"
+        },
+        {
+          "id": 34,
+          "name": "Mykelti Williamson",
+          "character": "Bubba Blue"
+        }
+      ],
+      "directors": [
+        {
+          "id": 24,
+          "name": "Robert Zemeckis"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 613,
+          "name": "new year's eve"
+        },
+        {
+          "id": 2957,
+          "name": "vietnam war"
+        },
+        {
+          "id": 422,
+          "name": "vietnam veteran"
+        },
+        {
+          "id": 791,
+          "name": "mentally disabled"
+        },
+        {
+          "id": 6054,
+          "name": "friendship"
+        },
+        {
+          "id": 840,
+          "name": "usa president"
+        },
+        {
+          "id": 521,
+          "name": "washington dc, usa"
+        },
+        {
+          "id": 447,
+          "name": "post-traumatic stress disorder (ptsd)"
+        },
+        {
+          "id": 828,
+          "name": "waitress"
+        },
+        {
+          "id": 818,
+          "name": "based on novel or book"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "*Forrest Gump*, a cinematic tapestry woven with humor and heartbreak, remains a potent cultural touchstone. Zemeckis masterfully blends the personal narrative of a simple man with pivotal moments in American history. Tom Hanks delivers a career-defining performance, imbuing Forrest with a guileless charm that belies the complex themes of love, loss, and the arbitrary nature of fate. While some find its sentimentality saccharine, its enduring appeal lies in its ability to resonate across generations, prompting reflection on what it means to live a life of purpose, even without fully understanding it. Its innovative visual effects further cemented its place in film history.",
+      "mood_tags": [
+        "Heartwarming",
+        "nostalgic",
+        "inspirational",
+        "bittersweet",
+        "sentimental"
+      ],
+      "watch_suggestion": "Forrest Gump is a heartwarming and thought-provoking film best enjoyed by adults and mature teens who appreciate a blend of humor, history, and romance, and are looking for an inspiring story about living a life of purpose and kindness."
+    },
+    {
+      "id": 122,
+      "title": "The Lord of the Rings: The Return of the King",
+      "original_title": "The Lord of the Rings: The Return of the King",
+      "overview": "As armies mass for a final battle that will decide the fate of the world--and powerful, ancient forces of Light and Dark compete to determine the outcome--one member of the Fellowship of the Ring is revealed as the noble heir to the throne of the Kings of Men. Yet, the sole hope for triumph over evil lies with a brave hobbit, Frodo, who, accompanied by his loyal friend Sam and the hideous, wretched Gollum, ventures deep into the very dark heart of Mordor on his seemingly impossible quest to destroy the Ring of Power.​",
+      "release_date": "2003-12-17",
+      "release_year": "2003",
+      "poster_url": "https://image.tmdb.org/t/p/w500/rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/2u7zbn8EudG6kLlBzUYqP8RyFU4.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=zckJCxYxn1g",
+      "genres": [
+        {
+          "id": 12,
+          "name": "Adventure"
+        },
+        {
+          "id": 14,
+          "name": "Fantasy"
+        },
+        {
+          "id": 28,
+          "name": "Action"
+        }
+      ],
+      "vote_average": 8.481,
+      "vote_count": 24755,
+      "score_percent": 85,
+      "cast": [
+        {
+          "id": 109,
+          "name": "Elijah Wood",
+          "character": "Frodo"
+        },
+        {
+          "id": 1327,
+          "name": "Ian McKellen",
+          "character": "Gandalf"
+        },
+        {
+          "id": 110,
+          "name": "Viggo Mortensen",
+          "character": "Aragorn"
+        },
+        {
+          "id": 1328,
+          "name": "Sean Astin",
+          "character": "Sam"
+        },
+        {
+          "id": 1333,
+          "name": "Andy Serkis",
+          "character": "Gollum / Smeagol"
+        }
+      ],
+      "directors": [
+        {
+          "id": 108,
+          "name": "Peter Jackson"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 6092,
+          "name": "army"
+        },
+        {
+          "id": 818,
+          "name": "based on novel or book"
+        },
+        {
+          "id": 606,
+          "name": "orcs"
+        },
+        {
+          "id": 603,
+          "name": "elves"
+        },
+        {
+          "id": 604,
+          "name": "dwarf"
+        },
+        {
+          "id": 2343,
+          "name": "magic"
+        },
+        {
+          "id": 4152,
+          "name": "kingdom"
+        },
+        {
+          "id": 1523,
+          "name": "obsession"
+        },
+        {
+          "id": 3930,
+          "name": "bravery"
+        },
+        {
+          "id": 3098,
+          "name": "castle"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Peter Jackson's *The Return of the King* isn't just a film, it's a cinematic monument. Culminating an epic journey, it delivers breathtaking spectacle alongside profound explorations of courage, sacrifice, and the seductive nature of power. Its cultural impact is undeniable, setting a new standard for fantasy filmmaking. While visually stunning, the true strength lies in its emotional core, particularly the poignant bond between Frodo and Sam. Though lengthy, its satisfying resolution and thematic resonance solidify its place as a modern classic and a landmark achievement in cinematic storytelling.",
+      "mood_tags": [
+        "Epic",
+        "Hopeful",
+        "Triumphant",
+        "Suspenseful",
+        "Dark"
+      ],
+      "watch_suggestion": "This epic adventure is perfect for fantasy fans seeking a long, immersive viewing experience on a weekend evening."
+    },
+    {
+      "id": 496243,
+      "title": "Parasite",
+      "original_title": "기생충",
+      "overview": "All unemployed, Ki-taek's family takes peculiar interest in the wealthy and glamorous Parks for their livelihood until they get entangled in an unexpected incident.",
+      "release_date": "2019-05-30",
+      "release_year": "2019",
+      "poster_url": "https://image.tmdb.org/t/p/w500/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg",
+      "backdrop_url": "https://image.tmdb.org/t/p/original/8eihUxjQsJ7WvGySkVMC0EwbPAD.jpg",
+      "trailer_url": "https://www.youtube.com/watch?v=bM9QabAojCg",
+      "genres": [
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 53,
+          "name": "Thriller"
+        },
+        {
+          "id": 18,
+          "name": "Drama"
+        }
+      ],
+      "vote_average": 8.502,
+      "vote_count": 18737,
+      "score_percent": 85,
+      "cast": [
+        {
+          "id": 20738,
+          "name": "Song Kang-ho",
+          "character": "Kim Ki-taek"
+        },
+        {
+          "id": 115290,
+          "name": "Lee Sun-kyun",
+          "character": "Park Dong-ik"
+        },
+        {
+          "id": 556435,
+          "name": "Cho Yeo-jeong",
+          "character": "Yeon-kyo"
+        },
+        {
+          "id": 1255881,
+          "name": "Choi Woo-shik",
+          "character": "Ki-woo"
+        },
+        {
+          "id": 1442583,
+          "name": "Park So-dam",
+          "character": "Ki-jung"
+        }
+      ],
+      "directors": [
+        {
+          "id": 21684,
+          "name": "Bong Joon Ho"
+        }
+      ],
+      "keywords": [
+        {
+          "id": 10123,
+          "name": "dark comedy"
+        },
+        {
+          "id": 5752,
+          "name": "private lessons"
+        },
+        {
+          "id": 5732,
+          "name": "birthday party"
+        },
+        {
+          "id": 10453,
+          "name": "con artist"
+        },
+        {
+          "id": 11935,
+          "name": "working class"
+        },
+        {
+          "id": 12565,
+          "name": "psychological thriller"
+        },
+        {
+          "id": 14514,
+          "name": "class differences"
+        },
+        {
+          "id": 17997,
+          "name": "housekeeper"
+        },
+        {
+          "id": 18015,
+          "name": "tutor"
+        },
+        {
+          "id": 18035,
+          "name": "family"
+        }
+      ],
+      "era": "IMDb Top 250",
+      "ai_review": "Bong Joon-ho's *Parasite* is a masterfully executed dark comedy that transcends genre. Its biting social commentary on class disparity, cleverly masked within a thrilling narrative, resonated deeply with global audiences, sparking crucial conversations about wealth inequality. The film's sharp script, stunning visuals, and pitch-perfect performances culminate in a cinematic experience that is both entertaining and profoundly unsettling. *Parasite's* cultural impact is undeniable, evidenced by its historic Oscar win, solidifying its place as a modern classic and a powerful reflection of our times.",
+      "mood_tags": [
+        "Based on the information provided",
+        "here are 5 emotional/atmospheric tags that best describe the film Parasite:\n\ndarkly comedic",
+        "suspenseful",
+        "tense",
+        "disturbing",
+        "satirical"
+      ],
+      "watch_suggestion": "Parasite is a must-watch for mature audiences who appreciate dark humor, social commentary, and thrilling plot twists, ideally those seeking thought-provoking cinema from a master storyteller."
+    }
+  ]
+}
