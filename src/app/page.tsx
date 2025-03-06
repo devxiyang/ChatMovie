@@ -1,13 +1,17 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import MoodSelector from '@/components/MoodSelector';
 import Image from 'next/image';
 import { Mood } from '@/types/movies';
+import MovieCarousel from '@/components/MovieCarousel';
+import MoodSelector from '@/components/MoodSelector';
+import { getRandomRecommendedMovies } from '@/lib/movies';
 
 export default function HomePage() {
+  // 状态管理
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [filmTransition, setFilmTransition] = useState(false);
+  const [featuredMovies, setFeaturedMovies] = useState(getRandomRecommendedMovies(5));
   
   // 胶片切换效果
   const triggerFilmTransition = () => {
@@ -19,16 +23,30 @@ export default function HomePage() {
   useEffect(() => {
     const savedMood = localStorage.getItem('selectedMood');
     if (savedMood) {
-      setSelectedMood(savedMood as Mood);
+      try {
+        setSelectedMood(savedMood as Mood);
+      } catch (e) {
+        localStorage.removeItem('selectedMood');
+      }
+    }
+    
+    // 每24小时刷新一次精选电影
+    const lastUpdate = localStorage.getItem('featuredMoviesUpdated');
+    if (!lastUpdate || (Date.now() - parseInt(lastUpdate)) > 86400000) {
+      const newFeatured = getRandomRecommendedMovies(5);
+      setFeaturedMovies(newFeatured);
+      localStorage.setItem('featuredMoviesUpdated', Date.now().toString());
     }
   }, []);
   
-  // 监听心情变化
+  // 监听存储变化
   useEffect(() => {
     const handleStorageChange = () => {
-      const currentMood = localStorage.getItem('selectedMood');
-      if (currentMood) {
-        setSelectedMood(currentMood as Mood);
+      const savedMood = localStorage.getItem('selectedMood');
+      if (savedMood) {
+        setSelectedMood(savedMood as Mood);
+      } else {
+        setSelectedMood(null);
       }
     };
     
@@ -36,121 +54,124 @@ export default function HomePage() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
   
+  // 编辑心情
   const handleEditMood = () => {
     triggerFilmTransition();
-    
-    setTimeout(() => {
-      const moodSelectorElement = document.querySelector('.mood-selector-container');
-      if (moodSelectorElement) {
-        moodSelectorElement.scrollIntoView({ behavior: 'smooth' });
-      }
-      
-      // 触发MoodSelector组件中的showMoodSelector状态
-      localStorage.setItem('showMoodSelector', 'true');
-      window.dispatchEvent(new Event('storage'));
-    }, 300);
+    localStorage.removeItem('selectedMood');
+    setSelectedMood(null);
   };
   
-  // 创建胶片穿孔
-  const renderFilmPerforations = () => {
-    const count = 20; // 穿孔数量
-    const holes = [];
-    
-    for (let i = 0; i < count; i++) {
-      holes.push(<div key={i} className="film-hole"></div>);
-    }
-    
-    return <div className="film-perforations">{holes}</div>;
+  // 渲染胶片穿孔装饰
+  const renderFilmPerforations = (side: 'left' | 'right') => {
+    return (
+      <div className={`film-perforations ${side}`}>
+        {[...Array(12)].map((_, i) => (
+          <div key={i} className="film-hole"></div>
+        ))}
+      </div>
+    );
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-neutral-950">
-      {/* 胶片质感效果 */}
-      <div className="movie-grain"></div>
-      <div className="film-border"></div>
-      {renderFilmPerforations()}
-      <div className="projector-flicker"></div>
+    <main className="flex flex-col min-h-screen overflow-hidden relative">
+      {/* 胶片装饰 */}
+      {renderFilmPerforations('left')}
+      {renderFilmPerforations('right')}
       
       {/* 胶片切换效果 */}
       <div className={`film-transition ${filmTransition ? 'active' : ''}`}></div>
       
-      {/* 页面头部 */}
-      <header className="py-4 px-6 flex justify-between items-center border-b border-neutral-800 bg-black/30 backdrop-blur-sm sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <Image
-            src="/popcorn.png"
-            alt="Popcorn"
-            width={32}
-            height={32}
-            className="drop-shadow-glow"
-          />
+      {/* 胶片颗粒效果 */}
+      <div className="movie-grain fixed inset-0 pointer-events-none"></div>
+      
+      {/* 顶部轮播区 */}
+      <section className="w-full bg-black/80 shadow-xl border-b border-zinc-800 pt-6 pb-8">
+        <div className="container mx-auto px-4">
+          <h1 className="text-4xl font-bold text-center mb-6 text-shadow">
+            精选电影
+          </h1>
+          
+          {/* 电影轮播 */}
+          <MovieCarousel movies={featuredMovies} />
         </div>
-        <div className="flex items-center gap-2">
-          {selectedMood && (
-            <div className="text-lg flex items-center gap-2 mr-4 text-gray-200">
-              <span>Feeling</span>
-              <span className="text-xl">{getEmojiForMood(selectedMood)}</span>
-              <span>{getMoodLabel(selectedMood)}</span>
+      </section>
+      
+      {/* 心情选择区 */}
+      <section className="flex-1 container mx-auto px-4 py-12">
+        <div className="max-w-4xl mx-auto">
+          {selectedMood ? (
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="text-4xl">{getMoodEmoji(selectedMood)}</div>
+                <h2 className="text-2xl font-semibold">{getMoodLabel(selectedMood)} 心情</h2>
+              </div>
+              <p className="text-gray-400 mb-6">
+                我们为您精选了适合 {getMoodLabel(selectedMood).toLowerCase()} 心情的电影
+              </p>
+              <button 
+                onClick={handleEditMood}
+                className="px-5 py-2 bg-zinc-800 hover:bg-zinc-700 rounded-md transition"
+              >
+                更换心情
+              </button>
+            </div>
+          ) : (
+            <div className="text-center mb-10">
+              <h2 className="text-3xl font-bold mb-4 text-shadow">选择您当前的心情</h2>
+              <p className="text-gray-400">
+                我们将根据您的心情推荐最合适的电影
+              </p>
             </div>
           )}
-          <button 
-            onClick={handleEditMood}
-            className="red-button px-4 py-2 hover:bg-red-700"
-          >
-            {selectedMood ? `${getEmojiForMood(selectedMood)} EDIT MOOD` : '😊 SELECT MOOD'}
-          </button>
+          
+          {/* 心情选择器组件 */}
+          <MoodSelector 
+            onMoodSelect={setSelectedMood} 
+            selectedMood={selectedMood} 
+          />
         </div>
-      </header>
-      
-      {/* 主要内容区 */}
-      <main className="flex-grow flex flex-col p-4 md:p-8 pl-8 md:pl-12">
-        <div className="max-w-3xl w-full mx-auto text-center mb-8">
-          <p className="text-lg text-muted-foreground mb-6">
-            选择你此刻的心情，我们会推荐适合的电影
-          </p>
-        </div>
-        
-        <MoodSelector />
-      </main>
+      </section>
       
       {/* 页脚 */}
-      <footer className="py-4 px-6 text-center text-sm text-muted-foreground">
-        <p>© 2023 Mood2Movie</p>
+      <footer className="border-t border-zinc-800 bg-black/60 py-6">
+        <div className="container mx-auto px-4 text-center text-zinc-500 text-sm">
+          <p>基于Top 250电影的心情推荐系统 &copy; {new Date().getFullYear()}</p>
+        </div>
       </footer>
-    </div>
+    </main>
   );
 }
 
-// 辅助函数 - 获取心情对应的表情
-function getEmojiForMood(mood: Mood): string {
-  const emojiMap: Record<Mood, string> = {
-    happy: '😊',
+// 获取心情对应的表情
+function getMoodEmoji(mood: Mood): string {
+  const emojis: Record<Mood, string> = {
+    happy: '😄',
     sad: '😢',
     excited: '🤩',
     relaxed: '😌',
-    romantic: '💖',
+    romantic: '💘',
     thoughtful: '🤔',
     nostalgic: '🕰️',
     adventurous: '🚀',
     inspired: '✨'
   };
   
-  return emojiMap[mood] || '😊';
+  return emojis[mood] || '🎬';
 }
 
-// 辅助函数 - 获取心情对应的文本标签
+// 获取心情标签
 function getMoodLabel(mood: Mood): string {
-  const labelMap: Record<Mood, string> = {
-    happy: 'Cheerful',
-    sad: 'Sad',
-    excited: 'Excited',
-    relaxed: 'Relaxed',
-    romantic: 'Romantic',
-    thoughtful: 'Thoughtful',
-    nostalgic: 'Nostalgic',
-    adventurous: 'Adventurous',
-    inspired: 'Inspired'
+  const labels: Record<Mood, string> = {
+    happy: '愉悦',
+    sad: '感伤',
+    excited: '兴奋',
+    relaxed: '放松',
+    romantic: '浪漫',
+    thoughtful: '深思',
+    nostalgic: '怀旧',
+    adventurous: '冒险',
+    inspired: '启发'
   };
   
-  return labelMap[mood] || 'Cheerful';
+  return labels[mood] || mood;
 } 
