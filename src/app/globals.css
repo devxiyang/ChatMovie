@@ -2,8 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-color: #ffffff;
+    color: #333333;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
 }
 
 @layer utilities {
@@ -56,6 +64,14 @@ body {
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --background-primary: #1a2231;
+    --background-secondary: #2c3a50;
+    --card-background: #2c3a50;
+    --card-hover: #3a4a63;
+    --text-primary: #ffffff;
+    --text-secondary: #a0aec0;
+    --accent-color: #6c5ce7;
+    --rating-color: #f1c40f;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -93,11 +109,170 @@ body {
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
+/* Mood selection styles */
+.mood-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 1rem;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.mood-button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  text-align: center;
+}
+
+.mood-button:hover {
+  background-color: #e5e5e5;
+  transform: translateY(-2px);
+}
+
+.mood-button.selected {
+  background-color: #e0f2fe;
+  border: 2px solid #0ea5e9;
+}
+
+.mood-emoji {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.mood-label {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+
+.container {
+  max-width: 1024px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.site-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.site-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  color: #111827;
+}
+
+.site-subtitle {
+  font-size: 1.25rem;
+  color: #6b7280;
+  margin-bottom: 2rem;
+}
+
+.movie-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1.5rem;
+}
+
+.movie-card {
+  border-radius: 0.75rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease-in-out;
+}
+
+.movie-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.movie-info {
+  padding: 1rem;
+}
+
+.movie-title {
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.movie-rating {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.section-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  color: #111827;
+}
+
+.button-primary {
+  background-color: #0ea5e9;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 9999px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.button-primary:hover {
+  background-color: #0284c7;
+}
+
+.footer {
+  text-align: center;
+  margin-top: 4rem;
+  padding-top: 2rem;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Additional custom styles to match the UI design */
+.featured-banner {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  height: 12rem;
+}
+
+.featured-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0) 100%);
+}
+
+.category-button {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  padding: 0.5rem 1rem;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.category-button:hover, .category-button.active {
+  background-color: var(--accent-color);
+}
+
+/* Override Tailwind's base styles */
+.bg-slate-900 {
+  background-color: var(--background-primary);
+}
+
+.bg-slate-800 {
+  background-color: var(--background-secondary);
 }
