@@ -25,6 +25,11 @@ export interface Movie {
   }[];
   era: string;
   keywords: { id: number; name: string }[];
+  
+  // AI生成的电影内容
+  ai_review?: string;
+  mood_tags?: string[];
+  watch_suggestion?: string;
 }
 
 export type Mood = 

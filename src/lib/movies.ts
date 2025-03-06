@@ -1,5 +1,10 @@
 import { Movie, Mood, MoodPlaylist } from '@/types/movies';
-import movieData from '@/data/movies.json';
+import topMoviesData from '@/data/top250-optimized.json';
+
+// 使用优化后的Top 250电影数据
+const movieData = {
+  movies: topMoviesData.movies || []
+};
 
 // 定义关键词和情绪的映射关系
 const moodKeywords: Record<Mood, string[]> = {
@@ -96,45 +101,108 @@ export function getAllMovies(): Movie[] {
   }
 }
 
+/**
+ * 获取心情对应的标签
+ */
+function getMoodLabel(mood: Mood): string {
+  const labels: Record<Mood, string> = {
+    happy: '愉悦',
+    sad: '感伤',
+    excited: '兴奋',
+    relaxed: '放松',
+    romantic: '浪漫',
+    thoughtful: '深思',
+    nostalgic: '怀旧',
+    adventurous: '冒险',
+    inspired: '启发'
+  };
+  
+  return labels[mood] || mood;
+}
+
 // 根据情绪推荐电影
 export function getMoviesByMood(mood: Mood, limit: number = 10): Movie[] {
-  const movies = getAllMovies();
+  // 获取所有电影
+  const allMovies = getAllMovies();
   
-  if (movies.length === 0) {
-    return [];
+  // 使用三种方法匹配心情：
+  // 1. AI生成的mood_tags (优先)
+  // 2. 关键词匹配 (次要)
+  // 3. 类型匹配 (再次)
+  
+  // 1. 先尝试使用AI生成的mood_tags
+  const moodLabel = getMoodLabel(mood);
+  const aiMatchedMovies = allMovies
+    .filter(movie => 
+      movie.mood_tags && 
+      Array.isArray(movie.mood_tags) && 
+      movie.mood_tags.some((tag: string) => 
+        tag.toLowerCase().includes(moodLabel.toLowerCase()) || 
+        moodKeywords[mood].some(keyword => 
+          tag.toLowerCase().includes(keyword)
+        )
+      )
+    )
+    .sort((a, b) => b.score_percent - a.score_percent);
+
+  // 如果AI匹配找到了足够的电影，优先使用这些结果
+  if (aiMatchedMovies.length >= limit) {
+    return aiMatchedMovies.slice(0, limit);
   }
   
-  // 创建一个电影分数映射表，用于按照情绪相关度排序
-  const movieScores: Record<number, number> = {};
+  // 把已经找到的AI匹配电影存起来
+  const results = [...aiMatchedMovies];
+  const remainingLimit = limit - results.length;
   
-  movies.forEach(movie => {
-    let score = 0;
-    
-    // 检查关键词匹配
-    movie.keywords?.forEach(keyword => {
-      if (moodKeywords[mood].some(mk => keyword.name.toLowerCase().includes(mk.toLowerCase()))) {
-        score += 3;
-      }
-    });
-    
-    // 检查流派匹配
-    movie.genres?.forEach(genre => {
-      if (moodGenres[mood].includes(genre.name)) {
-        score += 5;
-      }
-    });
-    
-    // 评分因素
-    score += movie.vote_average / 2;
-    
-    // 储存分数
-    movieScores[movie.id] = score;
-  });
+  // 2. 关键词匹配 (在还没有足够电影的情况下)
+  const keywordMatchedMovies = allMovies
+    .filter(movie => 
+      // 确保不重复已经由AI匹配的电影
+      !results.some(m => m.id === movie.id) &&
+      // 检查关键词匹配
+      movie.keywords && 
+      movie.keywords.some(keyword => 
+        moodKeywords[mood].some(moodKeyword => 
+          keyword.name.toLowerCase().includes(moodKeyword)
+        )
+      )
+    )
+    .sort((a, b) => b.score_percent - a.score_percent);
   
-  // 根据分数排序并返回前N个电影
-  return movies
-    .sort((a, b) => movieScores[b.id] - movieScores[a.id])
-    .slice(0, limit);
+  results.push(...keywordMatchedMovies.slice(0, remainingLimit));
+  
+  // 如果已经找到足够的电影，返回结果
+  if (results.length >= limit) {
+    return results;
+  }
+  
+  // 3. 类型匹配 (如果前两种方法没找到足够的电影)
+  const remainingLimit2 = limit - results.length;
+  const genreMatchedMovies = allMovies
+    .filter(movie => 
+      // 确保不重复
+      !results.some(m => m.id === movie.id) &&
+      // 类型匹配
+      movie.genres && 
+      movie.genres.some(genre => 
+        moodGenres[mood].includes(genre.name)
+      )
+    )
+    .sort((a, b) => b.score_percent - a.score_percent);
+  
+  results.push(...genreMatchedMovies.slice(0, remainingLimit2));
+  
+  // 如果仍然不足，随机补充一些高评分电影
+  if (results.length < limit) {
+    const remainingLimit3 = limit - results.length;
+    const otherMovies = allMovies
+      .filter(movie => !results.some(m => m.id === movie.id))
+      .sort((a, b) => b.score_percent - a.score_percent);
+    
+    results.push(...otherMovies.slice(0, remainingLimit3));
+  }
+  
+  return results;
 }
 
 // 心情播放列表数据
